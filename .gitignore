@@ -1,3 +1,4 @@
-
+log.json
 apikey.go
 go.sum
+*.temp.go
