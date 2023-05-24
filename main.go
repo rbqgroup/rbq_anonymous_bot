@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"golang.org/x/net/proxy"
@@ -64,6 +65,9 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 	updates := bot.GetUpdatesChan(u)
+
+	timers := make(map[string]*time.Ticker)
+	medias := make(map[string][]interface{})
 	for update := range updates {
 		var mode = 0 // 0: 無訊息 1: 文字訊息 2: 圖片訊息 3: 影片訊息 4: 音訊訊息 5: 檔案訊息
 		var msg tgbotapi.Chattable
@@ -79,7 +83,7 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 			continue
 		}
 		log.Printf("收到來自會話 %s(%d) 裡 %s(%d) 的訊息：%s", update.Message.Chat.UserName, update.Message.Chat.ID, update.Message.From.UserName, update.Message.From.ID, update.Message.Text)
-		// log.Println("媒體組: ", update.Message.MediaGroupID)
+		log.Println("組: ", update.Message.MediaGroupID)
 		// fromChat = ChatObj{ID: update.Message.Chat.ID, Title: update.Message.Chat.UserName}
 		fromUser = ChatObj{ID: update.Message.From.ID, Title: update.Message.From.UserName}
 		text = update.Message.Text
@@ -89,6 +93,17 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 		if update.Message.Photo != nil {
 			fileID = tgbotapi.FileID(update.Message.Photo[0].FileID)
 			println(fileID, update.Message.Caption)
+			var photo tgbotapi.InputMediaPhoto = tgbotapi.NewInputMediaPhoto(fileID)
+			if isMediaGroup {
+				var nMedia []interface{} = make([]interface{}, 0)
+				if medias[update.Message.MediaGroupID] != nil {
+					nMedia = append(medias[update.Message.MediaGroupID], photo)
+				} else {
+					nMedia = append(nMedia, photo)
+				}
+				medias[update.Message.MediaGroupID] = nMedia
+				// println("新增媒體", update.Message.MediaGroupID, len(medias[update.Message.MediaGroupID]))
+			}
 			mode = 2
 			text = update.Message.Caption
 		} else {
@@ -109,6 +124,27 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 				log.Printf("傳送訊息失敗: %s", err)
 			} else {
 				log.Printf("已向 %s(%d) 傳送訊息: %s", fromUser.Title, fromUser.ID, text)
+			}
+		} else {
+			if timers[update.Message.MediaGroupID] == nil {
+				newTicker := time.NewTicker(5 * time.Second)
+				timers[update.Message.MediaGroupID] = newTicker
+				go func() {
+					<-newTicker.C
+					// println("提交媒體", update.Message.MediaGroupID, len(medias[update.Message.MediaGroupID]))
+					timers[update.Message.MediaGroupID].Stop()
+					if len(medias[update.Message.MediaGroupID]) > 0 {
+						var photoMsg tgbotapi.MediaGroupConfig = tgbotapi.NewMediaGroup(testchat, medias[update.Message.MediaGroupID])
+						msg = photoMsg
+						if _, err := bot.Send(msg); err != nil {
+							log.Printf("傳送訊息失敗: %s", err)
+						} else {
+							log.Printf("已向 %s(%d) 傳送訊息: %s", fromUser.Title, fromUser.ID, text)
+						}
+					}
+					delete(timers, update.Message.MediaGroupID)
+					delete(medias, update.Message.MediaGroupID)
+				}()
 			}
 		}
 	}
