@@ -87,13 +87,15 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 		// fromChat = ChatObj{ID: update.Message.Chat.ID, Title: update.Message.Chat.UserName}
 		fromUser = ChatObj{ID: update.Message.From.ID, Title: update.Message.From.UserName}
 		text = update.Message.Text
-		mode = 0
 		var isMediaGroup = len(update.Message.MediaGroupID) > 0
 		var fileID tgbotapi.FileID
 		if update.Message.Photo != nil {
 			fileID = tgbotapi.FileID(update.Message.Photo[0].FileID)
 			println(fileID, update.Message.Caption)
 			var photo tgbotapi.InputMediaPhoto = tgbotapi.NewInputMediaPhoto(fileID)
+			if medias[update.Message.MediaGroupID] == nil {
+				photo.Caption = update.Message.Caption
+			}
 			if isMediaGroup {
 				var nMedia []interface{} = make([]interface{}, 0)
 				if medias[update.Message.MediaGroupID] != nil {
@@ -106,7 +108,7 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 			}
 			mode = 2
 			text = update.Message.Caption
-		} else {
+		} else if len(text) > 0 {
 			mode = 1
 		}
 		if !isMediaGroup {
@@ -127,14 +129,15 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 			}
 		} else {
 			if timers[update.Message.MediaGroupID] == nil {
-				newTicker := time.NewTicker(5 * time.Second)
+				newTicker := time.NewTicker(3 * time.Second)
 				timers[update.Message.MediaGroupID] = newTicker
+				var MediaGroupID = update.Message.MediaGroupID
 				go func() {
 					<-newTicker.C
 					// println("提交媒體", update.Message.MediaGroupID, len(medias[update.Message.MediaGroupID]))
-					timers[update.Message.MediaGroupID].Stop()
-					if len(medias[update.Message.MediaGroupID]) > 0 {
-						var photoMsg tgbotapi.MediaGroupConfig = tgbotapi.NewMediaGroup(testchat, medias[update.Message.MediaGroupID])
+					timers[MediaGroupID].Stop()
+					if len(medias[MediaGroupID]) > 0 {
+						var photoMsg tgbotapi.MediaGroupConfig = tgbotapi.NewMediaGroup(testchat, medias[MediaGroupID])
 						msg = photoMsg
 						if _, err := bot.Send(msg); err != nil {
 							log.Printf("傳送訊息失敗: %s", err)
@@ -142,8 +145,8 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 							log.Printf("已向 %s(%d) 傳送訊息: %s", fromUser.Title, fromUser.ID, text)
 						}
 					}
-					delete(timers, update.Message.MediaGroupID)
-					delete(medias, update.Message.MediaGroupID)
+					delete(timers, MediaGroupID)
+					delete(medias, MediaGroupID)
 				}()
 			}
 		}
