@@ -19,24 +19,27 @@ type ChatObj struct {
 }
 
 func main() {
-
 	fmt.Println("絨！")
-	socks5 := "socks5://localhost:23332"
+	if !loadConfig() {
+		return
+	}
 	client := &http.Client{}
-	tgProxyURL, err := url.Parse(socks5)
-	if err != nil {
-		log.Printf("代理伺服器地址配置錯誤: %s\n", err)
+	if len(config.Proxy) > 0 {
+		log.Printf("代理伺服器: %s\n", config.Proxy)
+		tgProxyURL, err := url.Parse(config.Proxy)
+		if err != nil {
+			log.Printf("代理伺服器地址配置錯誤: %s\n", err)
+		}
+		tgDialer, err := proxy.FromURL(tgProxyURL, proxy.Direct)
+		if err != nil {
+			log.Printf("代理伺服器錯誤: %s\n", err)
+		}
+		tgTransport := &http.Transport{
+			Dial: tgDialer.Dial,
+		}
+		client.Transport = tgTransport
 	}
-	tgDialer, err := proxy.FromURL(tgProxyURL, proxy.Direct)
-	if err != nil {
-		log.Printf("代理伺服器錯誤: %s\n", err)
-	}
-	tgTransport := &http.Transport{
-		Dial: tgDialer.Dial,
-	}
-	client.Transport = tgTransport
-
-	bot, err := tgbotapi.NewBotAPIWithClient(apikey, "https://api.telegram.org/bot%s/%s", client)
+	bot, err := tgbotapi.NewBotAPIWithClient(config.Apikey, "https://api.telegram.org/bot%s/%s", client)
 	if err != nil {
 		log.Printf("連線伺服器出現問題: %s\n", err)
 		return
@@ -78,8 +81,9 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 		var text string = ""
 		// for i := 0; i < updatesLen; i++ {
 		// 	update := updates
-		log.Print(">>>>>>>>>>>>")
+		log.Println(">>>>>>>>>>>>")
 		if update.Message == nil { // 過濾非訊息型別
+			log.Println("update.Message == nil")
 			continue
 		}
 		log.Printf("收到來自會話 %s(%d) 裡 %s(%d) 的訊息：%s", update.Message.Chat.UserName, update.Message.Chat.ID, update.Message.From.UserName, update.Message.From.ID, update.Message.Text)
@@ -114,9 +118,11 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 		if !isMediaGroup {
 			switch mode {
 			case 1:
-				msg = tgbotapi.NewMessage(testchat, text)
+				// msg = tgbotapi.NewMessage(config.testChat, text)
+				msg = tgbotapi.NewMessageToChannel(config.TestChannel, text)
 			case 2:
-				var photoMsg tgbotapi.PhotoConfig = tgbotapi.NewPhoto(testchat, fileID)
+				// var photoMsg tgbotapi.PhotoConfig = tgbotapi.NewPhoto(config.testChat, fileID)
+				var photoMsg tgbotapi.PhotoConfig = tgbotapi.NewPhotoToChannel(config.TestChannel, fileID)
 				photoMsg.Caption = text
 				msg = photoMsg
 			default:
@@ -137,7 +143,7 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 					// println("提交媒體", update.Message.MediaGroupID, len(medias[update.Message.MediaGroupID]))
 					timers[MediaGroupID].Stop()
 					if len(medias[MediaGroupID]) > 0 {
-						var photoMsg tgbotapi.MediaGroupConfig = tgbotapi.NewMediaGroup(testchat, medias[MediaGroupID])
+						var photoMsg tgbotapi.MediaGroupConfig = tgbotapi.NewMediaGroup(config.TestChat, medias[MediaGroupID])
 						msg = photoMsg
 						if _, err := bot.Send(msg); err != nil {
 							log.Printf("傳送訊息失敗: %s", err)

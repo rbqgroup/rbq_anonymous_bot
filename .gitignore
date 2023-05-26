@@ -1,4 +1,4 @@
 log.json
-apikey.go
+config.json
 go.sum
 *.temp.go
