@@ -8,14 +8,14 @@ import (
 )
 
 type ConfigFile struct {
-	Ver         int8   `json:"ver"`
-	Proxy       string `json:"proxy"`
-	Apikey      string `json:"apikey"`
-	TestChat    int64  `json:"testchat"`
-	TestChannel string `json:"testchannel"`
-	Ch2         string `json:"ch2"`
-	Ch25        string `json:"ch25"`
-	Ch3         string `json:"ch3"`
+	Ver      int8   `json:"ver"`
+	Proxy    string `json:"proxy"`
+	Apikey   string `json:"apikey"`
+	TestChat int64  `json:"testchat"`
+	G1       string `json:"g1"`
+	C2       string `json:"c2"`
+	C25      string `json:"c25"`
+	C3       string `json:"c3"`
 }
 
 var config ConfigFile
