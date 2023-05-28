@@ -78,7 +78,7 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 	for update := range updates {
 		var mode = 0 // 0: 無訊息 1: 文字訊息 2: 圖片訊息 3: 影片訊息 4: 音訊訊息 5: 檔案訊息
 		var msg tgbotapi.Chattable
-		var fromUser ChatObj
+		// var fromUser ChatObj
 		// var toUser ChatObj
 		// var fromChat ChatObj
 		// var toChat ChatObj
@@ -92,7 +92,9 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 			continue
 		}
 		log.Printf("收到來自會話 %s(%d) 裡 %s(%d) 的訊息：%s | %s", update.Message.Chat.UserName, update.Message.Chat.ID, update.Message.From.UserName, update.Message.From.ID, update.Message.Text, update.Message.CommandArguments())
-		log.Println("多圖組: ", update.Message.MediaGroupID)
+		if len(update.Message.MediaGroupID) > 0 {
+			log.Println("多圖組: ", update.Message.MediaGroupID)
+		}
 
 		// if update.Message.IsCommand() {
 		// 	switch update.Message.Command() {
@@ -102,7 +104,7 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 		// }
 
 		// fromChat = ChatObj{ID: update.Message.Chat.ID, Title: update.Message.Chat.UserName}
-		fromUser = ChatObj{ID: update.Message.From.ID, Title: update.Message.From.UserName}
+		// fromUser = ChatObj{ID: update.Message.From.ID, Title: update.Message.From.UserName}
 		text = update.Message.Text
 		if len(update.Message.Caption) > 0 {
 			text = update.Message.Caption
@@ -125,12 +127,33 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 		}
 		var isMediaGroup = len(update.Message.MediaGroupID) > 0
 		var fileID tgbotapi.FileID
-		if update.Message.Photo != nil {
-			fileID = tgbotapi.FileID(update.Message.Photo[0].FileID)
-			var photo tgbotapi.InputMediaPhoto = tgbotapi.NewInputMediaPhoto(fileID)
-			if medias[update.Message.MediaGroupID] == nil {
-				photo.Caption = text
+		if update.Message.Photo != nil || update.Message.Video != nil || update.Message.Animation != nil {
+			var photo tgbotapi.InputMediaPhoto
+			var video tgbotapi.InputMediaVideo
+			var animation tgbotapi.InputMediaAnimation
+			if update.Message.Photo != nil {
+				mode = 2
+				fileID = tgbotapi.FileID(update.Message.Photo[0].FileID)
+				photo = tgbotapi.NewInputMediaPhoto(fileID)
+				if medias[update.Message.MediaGroupID] == nil {
+					photo.Caption = text
+				}
+			} else if update.Message.Video != nil {
+				mode = 3
+				fileID = tgbotapi.FileID(update.Message.Video.FileID)
+				video = tgbotapi.NewInputMediaVideo(fileID)
+				if medias[update.Message.MediaGroupID] == nil {
+					video.Caption = text
+				}
+			} else if update.Message.Animation != nil {
+				mode = 4
+				fileID = tgbotapi.FileID(update.Message.Animation.FileID)
+				animation = tgbotapi.NewInputMediaAnimation(fileID)
+				if medias[update.Message.MediaGroupID] == nil {
+					animation.Caption = text
+				}
 			}
+			println("mode", mode)
 			if isMediaGroup {
 				var nMedia []interface{} = make([]interface{}, 0)
 				if len(toChannel) > 0 {
@@ -140,15 +163,28 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 					tousrs[update.Message.MediaGroupID] = fmt.Sprintf("%d", update.Message.Chat.ID)
 					// println("傳送到使用者", update.Message.MediaGroupID, update.Message.Chat.ID)
 				}
-				if medias[update.Message.MediaGroupID] != nil {
-					nMedia = append(medias[update.Message.MediaGroupID], photo)
-				} else {
-					nMedia = append(nMedia, photo)
+				if mode == 2 {
+					if medias[update.Message.MediaGroupID] != nil {
+						nMedia = append(medias[update.Message.MediaGroupID], photo)
+					} else {
+						nMedia = append(nMedia, photo)
+					}
+				} else if mode == 3 {
+					if medias[update.Message.MediaGroupID] != nil {
+						nMedia = append(medias[update.Message.MediaGroupID], video)
+					} else {
+						nMedia = append(nMedia, video)
+					}
+				} else if mode == 4 {
+					if medias[update.Message.MediaGroupID] != nil {
+						nMedia = append(medias[update.Message.MediaGroupID], animation)
+					} else {
+						nMedia = append(nMedia, animation)
+					}
 				}
 				medias[update.Message.MediaGroupID] = nMedia
 				// println("新增媒體", update.Message.MediaGroupID, len(medias[update.Message.MediaGroupID]))
 			}
-			mode = 2
 		} else if len(text) > 0 {
 			mode = 1
 		}
@@ -170,13 +206,35 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 					photoMsg.Caption = text
 					msg = photoMsg
 				}
+			case 3:
+				if len(toChannel) > 0 {
+					to, _ := strconv.ParseInt(toChannel, 10, 64)
+					var videoMsg tgbotapi.VideoConfig = tgbotapi.NewVideo(to, fileID)
+					videoMsg.Caption = text
+					msg = videoMsg
+				} else {
+					var videoMsg tgbotapi.VideoConfig = tgbotapi.NewVideo(update.Message.Chat.ID, fileID)
+					videoMsg.Caption = text
+					msg = videoMsg
+				}
+			case 4:
+				if len(toChannel) > 0 {
+					to, _ := strconv.ParseInt(toChannel, 10, 64)
+					var animationMsg tgbotapi.AnimationConfig = tgbotapi.NewAnimation(to, fileID)
+					animationMsg.Caption = text
+					msg = animationMsg
+				} else {
+					var animationMsg tgbotapi.AnimationConfig = tgbotapi.NewAnimation(update.Message.Chat.ID, fileID)
+					animationMsg.Caption = text
+					msg = animationMsg
+				}
 			default:
 				return
 			}
 			if _, err := bot.Send(msg); err != nil {
 				log.Printf("傳送訊息失敗: %s", err)
 			} else {
-				log.Printf("已向 %s(%d) 傳送訊息: %s", fromUser.Title, fromUser.ID, text)
+				log.Println("已傳送訊息", text)
 			}
 		} else {
 			if timers[update.Message.MediaGroupID] == nil {
@@ -188,11 +246,7 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 					// println("提交媒體", update.Message.MediaGroupID, len(medias[update.Message.MediaGroupID]))
 					timers[MediaGroupID].Stop()
 					if len(medias[MediaGroupID]) > 0 {
-						to, err := strconv.ParseInt(tousrs[MediaGroupID], 10, 64)
-						if err != nil {
-							log.Printf("組裝多圖失敗: %s", tousrs[MediaGroupID])
-							return
-						}
+						to, _ := strconv.ParseInt(tousrs[MediaGroupID], 10, 64)
 						var photoMsg tgbotapi.MediaGroupConfig = tgbotapi.NewMediaGroup(to, medias[MediaGroupID])
 						msg = photoMsg
 						if _, err := bot.Send(msg); err != nil {
