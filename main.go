@@ -63,7 +63,6 @@ func main() {
 		fmt.Println("終止 BOT")
 		os.Exit(0)
 	}
-
 }
 
 func getUpdates(bot *tgbotapi.BotAPI) {
@@ -76,7 +75,17 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 	tousrs := make(map[string]string)
 
 	for update := range updates {
-		var mode = 0 // 0: 無訊息 1: 文字訊息 2: 圖片訊息 3: 影片訊息 4: 音訊訊息 5: 檔案訊息
+		// for whitelist
+		for _, id := range config.Whitelist {
+			if update.Message.Chat.ID == id {
+				break
+			}
+			return
+		}
+
+		// 0: 無訊息 1: 文字訊息 2: 圖片訊息 3: 影片訊息 4: 音訊訊息 5: 檔案訊息
+		var mode = 0
+
 		var msg tgbotapi.Chattable
 		// var fromUser ChatObj
 		// var toUser ChatObj
@@ -114,16 +123,7 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 			var cmd string = textUnit[0]
 			textUnit = textUnit[1:]
 			text = strings.Join(textUnit, " ")
-			switch cmd {
-			case "/c2":
-				toChannel = config.C2
-			case "/c25":
-				toChannel = config.C25
-			case "/c3":
-				toChannel = config.C3
-			case "/g1":
-				toChannel = config.G1
-			}
+			toChannel = cmdTChat(cmd)
 		}
 		var isMediaGroup = len(update.Message.MediaGroupID) > 0
 		var fileID tgbotapi.FileID
