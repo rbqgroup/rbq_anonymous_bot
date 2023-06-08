@@ -134,7 +134,11 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 			mode = 1
 		}
 		if toChatID < 0 {
-			toChatID = update.Message.Chat.ID
+			if config.Debug {
+				toChatID = update.Message.Chat.ID
+			} else {
+				continue
+			}
 		}
 		if !isMediaGroup {
 			switch mode {

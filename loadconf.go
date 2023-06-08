@@ -10,6 +10,7 @@ import (
 
 type ConfigFile struct {
 	Ver       int8    `json:"ver"`
+	Debug     bool    `json:"debug"`
 	Proxy     string  `json:"proxy"`
 	Apikey    string  `json:"apikey"`
 	Timeout   int     `json:"timeout"`

@@ -44,8 +44,10 @@ func main() {
 		return
 	}
 
-	bot.Debug = true
-
+	bot.Debug = config.Debug
+	if config.Debug {
+		log.Printf("已開啟除錯模式")
+	}
 	log.Printf("已登入 %s", bot.Self.UserName)
 
 	go getUpdates(bot)
