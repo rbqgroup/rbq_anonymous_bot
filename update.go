@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -33,8 +34,8 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 		if !isOK {
 			continue
 		}
-		// 0: 無訊息 1: 文字訊息 2: 圖片訊息 3: 影片訊息 4: 音訊訊息 5: 檔案訊息
-		var mode = 0
+		var modeString []string = []string{"0空白", "1文字", "2圖片", "3影片", "4動畫"}
+		var mode int8 = 0
 
 		var msg tgbotapi.Chattable
 		// var fromUser ChatObj
@@ -45,18 +46,11 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 		var toChatID int64 = -1
 		var toChannel bool = false
 		var text string = ""
-		// for i := 0; i < updatesLen; i++ {
-		// 	update := updates
-		log.Printf("收到來自會話 %s(%d) 裡 %s(%d) 的訊息：%s | %s", update.Message.Chat.UserName, update.Message.Chat.ID, update.Message.From.UserName, update.Message.From.ID, update.Message.Text, update.Message.CommandArguments())
-		if len(update.Message.MediaGroupID) > 0 {
-			log.Println("多圖組: ", update.Message.MediaGroupID)
-		}
 
 		// if update.Message.IsCommand() {
-		// 	switch update.Message.Command() {
-		// 	case "c2":
-		// 		toChannel = config.C2
-		// 		msg.Text = "c2" + update.Message.CommandArguments()
+		// 	var userCommand string = update.Message.Command()
+		// 	var userCommandArg string = update.Message.CommandArguments()
+		// 	println("收到指令: ", userCommand, userCommandArg)
 		// }
 
 		// fromChat = ChatObj{ID: update.Message.Chat.ID, Title: update.Message.Chat.UserName}
@@ -65,6 +59,12 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 		if len(update.Message.Caption) > 0 {
 			text = update.Message.Caption
 		}
+
+		log.Printf("收到來自會話 %s(%d) 裡 %s(%d) 的訊息：%s", update.Message.Chat.UserName, update.Message.Chat.ID, update.Message.From.UserName, update.Message.From.ID, text)
+		if len(update.Message.MediaGroupID) > 0 {
+			log.Println("多圖組: ", update.Message.MediaGroupID)
+		}
+
 		if (len(text) > 0 && text[0] == '/') || update.Message.IsCommand() {
 			var textUnit []string = strings.Split(text, " ")
 			var cmd string = textUnit[0]
@@ -72,6 +72,11 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 			text = strings.Join(textUnit, " ")
 			toChannel, toChat = cmdTChat(cmd)
 			toChatID, _ = strconv.ParseInt(toChat, 10, 64)
+			var log = fmt.Sprintf("已指定收件人: %d", toChatID)
+			if toChannel {
+				log += " (頻道)"
+			}
+			println(log)
 		}
 		text = filterTwitterURL(text)
 		var isMediaGroup = len(update.Message.MediaGroupID) > 0
@@ -102,7 +107,7 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 					animation.Caption = text
 				}
 			}
-			println("mode", mode)
+			println("收到的資訊型別: ", modeString[mode])
 			if isMediaGroup {
 				var nMedia []interface{} = make([]interface{}, 0)
 				if toChannel || len(tousrs[update.Message.MediaGroupID]) == 0 {
@@ -133,7 +138,7 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 		} else if len(text) > 0 {
 			mode = 1
 		}
-		if toChatID < 0 {
+		if toChatID == -1 {
 			if config.Debug {
 				toChatID = update.Message.Chat.ID
 			} else {
@@ -170,9 +175,9 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 				return
 			}
 			if _, err := bot.Send(msg); err != nil {
-				log.Printf("向 %d 傳送 类型%d 訊息失敗: %s\n", toChatID, mode, err)
+				log.Printf("向 %d 傳送 %s类型 訊息失敗: %s\n", toChatID, modeString[mode], err)
 			} else {
-				log.Printf("已向 %d 傳送 类型%d 訊息: %s\n", toChatID, mode, text)
+				log.Printf("已向 %d 傳送 %s类型 訊息: %s\n", toChatID, modeString[mode], text)
 			}
 		} else {
 			if timers[update.Message.MediaGroupID] == nil {
