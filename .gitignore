@@ -2,3 +2,4 @@ log.json
 config.json
 go.sum
 *.temp.go
+bin/*
