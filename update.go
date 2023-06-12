@@ -34,7 +34,7 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 		if !isOK {
 			continue
 		}
-		var modeString []string = []string{"0空白", "1文字", "2圖片", "3影片", "4動畫"}
+		var modeString []string = []string{"0空白", "1文字", "2圖片", "3影片", "4動畫", "5多圖組"}
 		var mode int8 = 0
 
 		var msg tgbotapi.Chattable
@@ -107,7 +107,15 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 					animation.Caption = text
 				}
 			}
-			println("收到的資訊型別: ", modeString[mode])
+			// println("收到的資訊型別: ", modeString[mode])
+			// if mode == 1 && tweetGETchk(text) {
+			// 	println("有且僅有一個推特連結，開始解析。")
+			// 	var tweet Tweet = tweetGET(text)
+			// 	if !tweet.Success {
+			// 		println("推特解析失敗。")
+			// 		continue
+			// 	}
+			// }
 			if isMediaGroup {
 				var nMedia []interface{} = make([]interface{}, 0)
 				if toChannel || len(tousrs[update.Message.MediaGroupID]) == 0 {

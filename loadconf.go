@@ -18,6 +18,7 @@ type ConfigFile struct {
 	Timeout   int               `json:"timeout"`
 	Whitelist []int64           `json:"whitelist"`
 	To        map[string]string `json:"to"`
+	Nitter    string            `json:"nitterHost"`
 }
 
 func cmdTChat(cmd string) (bool, string) {
