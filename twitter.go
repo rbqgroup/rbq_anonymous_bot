@@ -10,6 +10,8 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"golang.org/x/net/html"
+
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 type Tweet struct {
@@ -27,6 +29,82 @@ type Tweet struct {
 	Images    []string
 	Videos    []string
 	MediaNum  int8
+}
+
+func tweetPush(update tgbotapi.Update, bot *tgbotapi.BotAPI, text string, toChannel bool, toChat string) {
+	var tweet Tweet = tweetGET(text)
+	if !tweet.Success {
+		println("推特解析失敗。")
+		return
+	}
+	toChatID, _ := strconv.ParseInt(toChat, 10, 64)
+	var statText string = fmt.Sprintf("评论:%d　转推:%d　引用:%d　喜欢:%d", tweet.Comments, tweet.Retweets, tweet.Quotes, tweet.Likes)
+	var enter = "\n"
+	if strings.Contains(tweet.Content, "\n") {
+		enter += "\n"
+	}
+	text = text + enter + tweet.Content + enter + statText
+	var msg tgbotapi.Chattable
+	var mode = 0
+	if tweet.MediaNum == 0 {
+		// 文字
+		if toChannel {
+			msg = tgbotapi.NewMessageToChannel(toChat, text)
+		} else {
+			msg = tgbotapi.NewMessage(toChatID, text)
+		}
+		mode = 1
+	} else if tweet.MediaNum == 1 {
+		// 單一附件
+		if len(tweet.Images) > 0 {
+			var file tgbotapi.FileURL = tgbotapi.FileURL(tweet.Images[0])
+			var photoMsg tgbotapi.PhotoConfig
+			if toChannel {
+				photoMsg = tgbotapi.NewPhotoToChannel(toChat, file)
+			} else {
+				photoMsg = tgbotapi.NewPhoto(toChatID, file)
+			}
+			photoMsg.Caption = text
+			msg = photoMsg
+			mode = 2
+		} else if len(tweet.Videos) > 0 {
+			var file tgbotapi.FileURL = tgbotapi.FileURL(tweet.Videos[0])
+			var videoMsg tgbotapi.VideoConfig = tgbotapi.NewVideo(toChatID, file)
+			videoMsg.Caption = text
+			msg = videoMsg
+			mode = 3
+		}
+	} else if tweet.MediaNum > 1 {
+		// 多附件
+		var files []interface{} = []interface{}{}
+		var isCaption = false
+		for _, v := range tweet.Images {
+			var file tgbotapi.FileURL = tgbotapi.FileURL(v)
+			var photo tgbotapi.InputMediaPhoto = tgbotapi.NewInputMediaPhoto(file)
+			if !isCaption {
+				photo.Caption = text
+				isCaption = true
+			}
+			files = append(files, photo)
+		}
+		for _, v := range tweet.Videos {
+			var file tgbotapi.FileURL = tgbotapi.FileURL(v)
+			var video tgbotapi.InputMediaVideo = tgbotapi.NewInputMediaVideo(file)
+			if !isCaption {
+				video.Caption = text
+				isCaption = true
+			}
+			files = append(files, video)
+		}
+		var mediaGroupMsg tgbotapi.MediaGroupConfig = tgbotapi.NewMediaGroup(toChatID, files)
+		msg = mediaGroupMsg
+		mode = 5
+	}
+	if _, err := bot.Send(msg); err != nil {
+		log.Printf("向 %d 傳送 %s类型 訊息失敗: %s\n", toChatID, modeString[mode], err)
+	} else {
+		log.Printf("已向 %d 傳送 %s类型 訊息: %s\n", toChatID, modeString[mode], text)
+	}
 }
 
 func tweetGETchk(url string) bool {
@@ -55,8 +133,6 @@ func tweetGET(url string) Tweet {
 		Images:    []string{},
 		Videos:    []string{},
 	}
-	flag.StringVar(&url, "d", "", "Twitter URL")
-	flag.Parse()
 	if url == "" {
 		flag.Usage()
 		return tweet
@@ -86,14 +162,6 @@ func tweetGET(url string) Tweet {
 			println("解析資料失敗:", err)
 		}
 		println("解析資料成功，解析推文...")
-		var tweetFullnames []*html.Node = doc.Find(".main-tweet .timeline-item .tweet-body .tweet-header .fullname").Nodes
-		if len(tweetFullnames) == 0 {
-			println("解析推文作者暱稱失敗")
-			return tweet
-		} else {
-			tweet.Fullname = tweetFullnames[0].FirstChild.Data
-			println("推文作者暱稱:", tweet.Fullname)
-		}
 		var tweetUsernames []*html.Node = doc.Find(".main-tweet .timeline-item .tweet-body .tweet-header .username").Nodes
 		if len(tweetUsernames) == 0 {
 			println("解析推文作者帳號失敗")
@@ -101,6 +169,15 @@ func tweetGET(url string) Tweet {
 		} else {
 			tweet.Username = tweetUsernames[0].FirstChild.Data
 			println("推文作者帳號:", tweet.Username)
+		}
+		var tweetFullnames []*html.Node = doc.Find(".main-tweet .timeline-item .tweet-body .tweet-header .fullname").Nodes
+		if len(tweetFullnames) == 0 {
+			println("解析推文作者暱稱失敗")
+			tweet.Fullname = tweetUsernames[0].FirstChild.Data
+			println("使用帳號名:", tweet.Username)
+		} else {
+			tweet.Fullname = tweetFullnames[0].FirstChild.Data
+			println("推文作者暱稱:", tweet.Fullname)
 		}
 		var tweetTimes []*html.Node = doc.Find(".main-tweet .timeline-item .tweet-body .tweet-published").Nodes
 		if len(tweetTimes) == 0 {
@@ -124,8 +201,7 @@ func tweetGET(url string) Tweet {
 				}
 				num, err := strconv.Atoi(strings.Replace(strings.Replace(tweetStat.LastChild.Data, " ", "", -1), ",", "", -1))
 				if err != nil {
-					println("解析推文統計失敗", tweetStat.LastChild.Data, err)
-					return tweet
+					num = 0
 				}
 				tweetStatNum[i] = num
 				println(tweetStatTitle[i], ":", tweetStatNum[i])
