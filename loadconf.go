@@ -26,10 +26,11 @@ func cmdTChat(cmd string) (bool, string) {
 		return false, ""
 	}
 	for k, v := range config.To {
-		if cmd == k {
+		if cmd[1:] == k {
 			return strings.HasPrefix(v, "C"), v[1:]
 		}
 	}
+	log.Println("找不到预设发送目标", cmd)
 	return false, ""
 }
 

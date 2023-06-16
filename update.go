@@ -10,6 +10,8 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+var modeString []string = []string{"0空白", "1文字", "2圖片", "3影片", "4動畫", "5多圖組"}
+
 func getUpdates(bot *tgbotapi.BotAPI) {
 	var u tgbotapi.UpdateConfig = tgbotapi.NewUpdate(0)
 	u.Timeout = config.Timeout
@@ -34,7 +36,6 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 		if !isOK {
 			continue
 		}
-		var modeString []string = []string{"0空白", "1文字", "2圖片", "3影片", "4動畫", "5多圖組"}
 		var mode int8 = 0
 
 		var msg tgbotapi.Chattable
@@ -107,15 +108,7 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 					animation.Caption = text
 				}
 			}
-			// println("收到的資訊型別: ", modeString[mode])
-			// if mode == 1 && tweetGETchk(text) {
-			// 	println("有且僅有一個推特連結，開始解析。")
-			// 	var tweet Tweet = tweetGET(text)
-			// 	if !tweet.Success {
-			// 		println("推特解析失敗。")
-			// 		continue
-			// 	}
-			// }
+			println("收到的資訊型別: ", modeString[mode])
 			if isMediaGroup {
 				var nMedia []interface{} = make([]interface{}, 0)
 				if toChannel || len(tousrs[update.Message.MediaGroupID]) == 0 {
@@ -145,6 +138,12 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 			}
 		} else if len(text) > 0 {
 			mode = 1
+			println("收到的資訊型別: ", modeString[mode])
+			if tweetGETchk(text) {
+				println("有且僅有一個推特連結，開始解析。")
+				go tweetPush(update, bot, text, toChannel, toChat)
+				continue
+			}
 		}
 		if toChatID == -1 {
 			if config.Debug {
@@ -198,8 +197,8 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 					timers[MediaGroupID].Stop()
 					if len(medias[MediaGroupID]) > 0 {
 						to, _ := strconv.ParseInt(tousrs[MediaGroupID], 10, 64)
-						var photoMsg tgbotapi.MediaGroupConfig = tgbotapi.NewMediaGroup(to, medias[MediaGroupID])
-						msg = photoMsg
+						var mediaGroupMsg tgbotapi.MediaGroupConfig = tgbotapi.NewMediaGroup(to, medias[MediaGroupID])
+						msg = mediaGroupMsg
 						if _, err := bot.Send(msg); err != nil {
 							log.Printf("向 %d 傳送多圖訊息失敗: %s", to, err)
 						} else {
