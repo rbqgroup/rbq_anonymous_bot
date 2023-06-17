@@ -48,6 +48,7 @@ func tweetPush(update tgbotapi.Update, bot *tgbotapi.BotAPI, text string, toChan
 	var mode = 0
 	if tweet.MediaNum == 0 {
 		// 文字
+		text = config.HeadText + text
 		if toChannel {
 			msg = tgbotapi.NewMessageToChannel(toChat, text)
 		} else {
@@ -64,12 +65,14 @@ func tweetPush(update tgbotapi.Update, bot *tgbotapi.BotAPI, text string, toChan
 			} else {
 				photoMsg = tgbotapi.NewPhoto(toChatID, file)
 			}
+			text = config.HeadPhoto + text
 			photoMsg.Caption = text
 			msg = photoMsg
 			mode = 2
 		} else if len(tweet.Videos) > 0 {
 			var file tgbotapi.FileURL = tgbotapi.FileURL(tweet.Videos[0])
 			var videoMsg tgbotapi.VideoConfig = tgbotapi.NewVideo(toChatID, file)
+			text = config.HeadVideo + text
 			videoMsg.Caption = text
 			msg = videoMsg
 			mode = 3
@@ -78,6 +81,13 @@ func tweetPush(update tgbotapi.Update, bot *tgbotapi.BotAPI, text string, toChan
 		// 多附件
 		var files []interface{} = []interface{}{}
 		var isCaption = false
+		if len(tweet.Videos) > 0 {
+			if len(config.HeadVideo) > 0 {
+				text = config.HeadVideo + text
+			} else if len(config.HeadPhoto) > 0 {
+				text = config.HeadPhoto + text
+			}
+		}
 		for _, v := range tweet.Images {
 			var file tgbotapi.FileURL = tgbotapi.FileURL(v)
 			var photo tgbotapi.InputMediaPhoto = tgbotapi.NewInputMediaPhoto(file)

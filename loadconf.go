@@ -11,14 +11,18 @@ import (
 var config ConfigFile
 
 type ConfigFile struct {
-	Ver       int8              `json:"ver"`
-	Debug     bool              `json:"debug"`
-	Proxy     string            `json:"proxy"`
-	Apikey    string            `json:"apikey"`
-	Timeout   int               `json:"timeout"`
-	Whitelist []int64           `json:"whitelist"`
-	To        map[string]string `json:"to"`
-	Nitter    string            `json:"nitterHost"`
+	Ver           int8              `json:"ver"`
+	Debug         bool              `json:"debug"`
+	Proxy         string            `json:"proxy"`
+	Apikey        string            `json:"apikey"`
+	Timeout       int               `json:"timeout"`
+	Whitelist     []int64           `json:"whitelist"`
+	To            map[string]string `json:"to"`
+	Nitter        string            `json:"nitterHost"`
+	HeadText      string            `json:"headText"`
+	HeadPhoto     string            `json:"headPhoto"`
+	HeadVideo     string            `json:"headVideo"`
+	HeadAnimation string            `json:"headAnimation"`
 }
 
 func cmdTChat(cmd string) (bool, string) {

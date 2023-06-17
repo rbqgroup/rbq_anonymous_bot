@@ -86,25 +86,28 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 			var photo tgbotapi.InputMediaPhoto
 			var video tgbotapi.InputMediaVideo
 			var animation tgbotapi.InputMediaAnimation
-			if update.Message.Photo != nil {
-				mode = 2
-				fileID = tgbotapi.FileID(update.Message.Photo[0].FileID)
-				photo = tgbotapi.NewInputMediaPhoto(fileID)
-				if medias[update.Message.MediaGroupID] == nil {
-					photo.Caption = text
-				}
-			} else if update.Message.Video != nil {
+			if update.Message.Video != nil {
 				mode = 3
 				fileID = tgbotapi.FileID(update.Message.Video.FileID)
 				video = tgbotapi.NewInputMediaVideo(fileID)
 				if medias[update.Message.MediaGroupID] == nil {
+					text = config.HeadVideo + text
 					video.Caption = text
+				}
+			} else if update.Message.Photo != nil {
+				mode = 2
+				fileID = tgbotapi.FileID(update.Message.Photo[0].FileID)
+				photo = tgbotapi.NewInputMediaPhoto(fileID)
+				if medias[update.Message.MediaGroupID] == nil {
+					text = config.HeadPhoto + text
+					photo.Caption = text
 				}
 			} else if update.Message.Animation != nil {
 				mode = 4
 				fileID = tgbotapi.FileID(update.Message.Animation.FileID)
 				animation = tgbotapi.NewInputMediaAnimation(fileID)
 				if medias[update.Message.MediaGroupID] == nil {
+					text = config.HeadAnimation + text
 					animation.Caption = text
 				}
 			}
@@ -138,8 +141,9 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 			}
 		} else if len(text) > 0 {
 			mode = 1
+			text = config.HeadText + text
 			println("收到的資訊型別: ", modeString[mode])
-			if tweetGETchk(text) {
+			if len(config.Nitter) > 0 && tweetGETchk(text) {
 				println("有且僅有一個推特連結，開始解析。")
 				go tweetPush(update, bot, text, toChannel, toChat)
 				continue
@@ -195,9 +199,10 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 					<-newTicker.C
 					// println("提交媒體", update.Message.MediaGroupID, len(medias[update.Message.MediaGroupID]))
 					timers[MediaGroupID].Stop()
-					if len(medias[MediaGroupID]) > 0 {
+					var mediaGroup []interface{} = medias[MediaGroupID]
+					if len(mediaGroup) > 0 {
 						to, _ := strconv.ParseInt(tousrs[MediaGroupID], 10, 64)
-						var mediaGroupMsg tgbotapi.MediaGroupConfig = tgbotapi.NewMediaGroup(to, medias[MediaGroupID])
+						var mediaGroupMsg tgbotapi.MediaGroupConfig = tgbotapi.NewMediaGroup(to, mediaGroup)
 						msg = mediaGroupMsg
 						if _, err := bot.Send(msg); err != nil {
 							log.Printf("向 %d 傳送多圖訊息失敗: %s", to, err)
