@@ -22,8 +22,7 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 	var tousrs map[string]string = make(map[string]string)
 
 	for update := range updates {
-		// for whitelist
-		if update.Message == nil {
+		if update.Message == nil || chatID(update, bot) {
 			continue
 		}
 		var isOK bool = false
