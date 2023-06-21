@@ -3,3 +3,6 @@ config.json
 go.sum
 *.temp.go
 bin/*
+healthcheck.session
+healthcheck.lock
+rbq_anonymous_bot

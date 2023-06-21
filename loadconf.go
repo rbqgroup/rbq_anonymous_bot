@@ -13,6 +13,7 @@ var config ConfigFile
 type ConfigFile struct {
 	Ver           int8              `json:"ver"`
 	Debug         bool              `json:"debug"`
+	HealthCheck   string            `json:"healthcheck"`
 	Proxy         string            `json:"proxy"`
 	Apikey        string            `json:"apikey"`
 	Timeout       int               `json:"timeout"`

@@ -186,8 +186,10 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 			}
 			if _, err := bot.Send(msg); err != nil {
 				log.Printf("向 %d 傳送 %s类型 訊息失敗: %s\n", toChatID, modeString[mode], err)
+				health(false)
 			} else {
 				log.Printf("已向 %d 傳送 %s类型 訊息: %s\n", toChatID, modeString[mode], text)
+				health(true)
 			}
 		} else {
 			if timers[update.Message.MediaGroupID] == nil {
@@ -205,8 +207,10 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 						msg = mediaGroupMsg
 						if _, err := bot.Send(msg); err != nil {
 							log.Printf("向 %d 傳送多圖訊息失敗: %s", to, err)
+							health(false)
 						} else {
 							log.Printf("已向 %d 傳送多圖訊息: %s", to, text)
+							health(true)
 						}
 					}
 					delete(timers, MediaGroupID)

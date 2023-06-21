@@ -112,8 +112,10 @@ func tweetPush(update tgbotapi.Update, bot *tgbotapi.BotAPI, text string, toChan
 	}
 	if _, err := bot.Send(msg); err != nil {
 		log.Printf("向 %d 傳送 %s类型 訊息失敗: %s\n", toChatID, modeString[mode], err)
+		health(false)
 	} else {
 		log.Printf("已向 %d 傳送 %s类型 訊息: %s\n", toChatID, modeString[mode], text)
+		health(true)
 	}
 }
 
