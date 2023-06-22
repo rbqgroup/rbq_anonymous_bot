@@ -9,7 +9,7 @@
 - 匿名发送内容到各个频道或群组。
 - 解析推特推文链接，自动移除跟踪代码，拉取并发表推文里面包含的图文。
 - 自动为视频信息加 `#视频` 标签。
-- 一起当 _~更新姬~_ 。
+- 一起当 _更新姬_ 。
 
 ## 使用
 
@@ -49,6 +49,7 @@ go build
     "proxy": "http://127.0.0.1:8080",
     "apikey": "xxxxxxxxxx:*******-***********-***************",
     "healthcheck": "healthcheck.lock",
+    "timezone": 8,
     "timeout": 600,
     "whitelist": [
         00000000
@@ -75,6 +76,7 @@ go build
 - `proxy` 是代理服务器，支持 `http` 和 `socks5`，不需要时留空字符串。
 - `apikey` Telegram 的会话令牌（去问 [BotFather](https://t.me/BotFather) 要）。
 - `healthcheck` Docker 健康检查用会话文件名，需要和 `Dockerfile` 中的 `HEALTHCHECK` 想对应。
+- `timezone` GMT 时间偏移量，用于显示时间时所用的时区。
 - `whitelist` 是白名单，只允许这些 UID 使用这个 BOT 。
 - `to` 是会话代号（预定义的发送目标）。
   - key 是命令，例如 `"c2"` 表示 `/c2` 命令。

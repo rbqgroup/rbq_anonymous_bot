@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"golang.org/x/net/html"
@@ -38,7 +39,8 @@ func tweetPush(update tgbotapi.Update, bot *tgbotapi.BotAPI, text string, toChan
 		return
 	}
 	toChatID, _ := strconv.ParseInt(toChat, 10, 64)
-	var statText string = fmt.Sprintf("评论:%d　转推:%d　引用:%d　喜欢:%d", tweet.Comments, tweet.Retweets, tweet.Quotes, tweet.Likes)
+	var timeStr string = timeFormat(tweet.Time)
+	var statText string = fmt.Sprintf("%d 评论 | %d 转推 | %d 引用 | %d 喜欢\n发推时间: %s", tweet.Comments, tweet.Retweets, tweet.Quotes, tweet.Likes, timeStr)
 	var enter = "\n"
 	if strings.Contains(tweet.Content, "\n") {
 		enter += "\n"
@@ -117,6 +119,29 @@ func tweetPush(update tgbotapi.Update, bot *tgbotapi.BotAPI, text string, toChan
 		log.Printf("已向 %d 傳送 %s类型 訊息: %s\n", toChatID, modeString[mode], text)
 		health(true)
 	}
+}
+
+func timeFormat(timeStr string) string {
+	var layout string = "Jan 02, 2006 · 3:04 PM UTC" // UTC = GMT + 0
+	nTime, err := time.Parse(layout, timeStr)
+	if err != nil {
+		fmt.Println("時間格式化失敗", timeStr, err)
+		return timeStr
+	}
+	nTime = nTime.Add(time.Hour * time.Duration(config.TimeZone))
+	layout = "2006年1月2日 PM3:04"
+	var newStr string = nTime.Format(layout)
+	if len(newStr) == 0 {
+		return timeStr
+	}
+	var timeZoneStr string = ""
+	if config.TimeZone < 0 {
+		timeZoneStr = fmt.Sprintf("%d", config.TimeZone)
+	} else if config.TimeZone > 0 {
+		timeZoneStr = fmt.Sprintf("+%d", config.TimeZone)
+	}
+	newStr += " (GMT" + timeZoneStr + ")"
+	return newStr
 }
 
 func tweetGETchk(url string) bool {
