@@ -40,7 +40,7 @@ func tweetPush(update tgbotapi.Update, bot *tgbotapi.BotAPI, text string, toChan
 	}
 	toChatID, _ := strconv.ParseInt(toChat, 10, 64)
 	var timeStr string = timeFormat(tweet.Time)
-	var statText string = fmt.Sprintf("%d 评论 | %d 转推 | %d 引用 | %d 喜欢\n发推时间: %s", tweet.Comments, tweet.Retweets, tweet.Quotes, tweet.Likes, timeStr)
+	var statText string = fmt.Sprintf("💬%d  🔁%d  🔀%d  💖%d  %s", tweet.Comments, tweet.Retweets, tweet.Quotes, tweet.Likes, timeStr)
 	var enter = "\n"
 	if strings.Contains(tweet.Content, "\n") {
 		enter += "\n"
@@ -131,6 +131,24 @@ func timeFormat(timeStr string) string {
 	nTime = nTime.Add(time.Hour * time.Duration(config.TimeZone))
 	layout = "2006年1月2日 PM3:04"
 	var newStr string = nTime.Format(layout)
+	var th int = nTime.Hour()
+	var thC string = "AM"
+	if th >= 12 {
+		thC = "PM"
+	}
+	if th >= 0 && th < 6 {
+		newStr = strings.Replace(newStr, thC, " 夜间", 1)
+	} else if th >= 6 && th < 8 {
+		newStr = strings.Replace(newStr, thC, " 早晨", 1)
+	} else if th >= 8 && th < 11 {
+		newStr = strings.Replace(newStr, thC, " 上午", 1)
+	} else if th >= 11 && th < 13 {
+		newStr = strings.Replace(newStr, thC, " 中午", 1)
+	} else if th >= 13 && th < 18 {
+		newStr = strings.Replace(newStr, thC, " 下午", 1)
+	} else if th >= 18 && th < 24 {
+		newStr = strings.Replace(newStr, thC, " 晚上", 1)
+	}
 	if len(newStr) == 0 {
 		return timeStr
 	}
@@ -141,7 +159,14 @@ func timeFormat(timeStr string) string {
 		timeZoneStr = fmt.Sprintf("+%d", config.TimeZone)
 	}
 	newStr += " (GMT" + timeZoneStr + ")"
-	return newStr
+	var timeEmoji []string = strings.Split("🕛🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚", "")
+	var timeEmojiN string = timeEmoji[3]
+	if th >= 12 {
+		timeEmojiN = timeEmoji[th-12]
+	} else {
+		timeEmojiN = timeEmoji[th]
+	}
+	return timeEmojiN + newStr
 }
 
 func tweetGETchk(url string) bool {
