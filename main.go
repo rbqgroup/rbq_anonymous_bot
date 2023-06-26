@@ -1,3 +1,4 @@
+//go:generate goversioninfo -icon=rc.ico -manifest=main.exe.manifest
 package main
 
 import (
@@ -18,7 +19,7 @@ type ChatObj struct {
 }
 
 func main() {
-	fmt.Println("絨！")
+	fmt.Println("rbq_anonymous_bot v1.1.0")
 	if !loadConfig() {
 		return
 	}

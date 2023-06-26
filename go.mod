@@ -10,6 +10,8 @@ require (
 )
 
 require (
+	github.com/akavel/rsrc v0.10.2 // indirect
 	github.com/andybalholm/cascadia v1.3.1 // indirect
+	github.com/josephspurrier/goversioninfo v1.4.0 // indirect
 	github.com/technoweenie/multipartstreamer v1.0.1 // indirect
 )

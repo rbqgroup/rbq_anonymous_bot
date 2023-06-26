@@ -20,7 +20,7 @@
 - 当传送的内容为视频时，自动在正文前面添加 `#视频` 标签。可以在配置文件中禁用或自定义此功能。
 - 输入 `/chatid` 命令时，将返回当前会话和用户的名称和 ID 。该命令仅在配置文件中启用调试模式时有效，并且无视使用者白名单限制。可用于使用者加入白名单之前获取自己的 用户/群组/频道 的 ID 。
 
-## 部署
+## 编译
 
 开发时所用 golang 版本: `1.19.5`
 
@@ -29,16 +29,33 @@ go get
 go build
 ```
 
-然后创建配置文件 `config.json` ，和编译出来的可执行文件 `rbq_anonymous_bot` 放一起。
+### 跨平台编译
+
+在 Windows x64 中也可以通过批处理一键生成全平台二进制文件：
+
+```bat
+go build
+MKDIR bin
+build.bat
+```
+
+批处理脚本最后会调用 `MAKECAB` 和 `7z` 命令进行压缩。
+
+## 部署
+
+1. 创建配置文件 `config.json` ，和编译出来的可执行文件放一起。
+2. Linux 或 macOS 需要使用 `chmod +x [可执行文件名]` 给予权限。
+3. 运行可执行文件。
 
 ### 使用 Docker 部署
 
-1. 使用 `build_linux.bat` 或参考里面的操作生成可执行文件压缩档 `bin/rbq_anonymous_bot.xz` 。
-2. 修改 `./docker.sh` 为需要的 Docker 操作。
-3. 将 `bin/rbq_anonymous_bot.xz` + `config.json` + `Dockerfile` + `docker.sh` 复制到服务器中的同一个文件夹中。
-4. 进入服务器中的该文件夹，执行 `chmod +x docker.sh` 和 `./docker.sh` 即可运行
-5. 让 bot 转发一条消息，等待大约一分钟，该 Docker 容器状态会显示为 `healthy` 。
-6. 如果没有出现停止问题，可以将 RESTART POLICIES 设置为 `Always` 。
+1. 创建配置文件 `config.json` 。
+2. 使用 `build_linux.bat` 或参考里面的操作生成可执行文件压缩档 `bin/rbq_anonymous_bot.xz` 。
+3. 修改 `./docker.sh` 为需要的 Docker 操作。
+4. 将 `bin/rbq_anonymous_bot.xz` + `config.json` + `Dockerfile` + `docker.sh` 复制到服务器中的同一个文件夹中。
+5. 进入服务器中的该文件夹，执行 `chmod +x docker.sh` 和 `./docker.sh` 即可运行
+6. 让 bot 转发一条消息，等待大约一分钟，该 Docker 容器状态会显示为 `healthy` 。
+7. 如果没有出现停止问题，可以将 RESTART POLICIES 设置为 `Always` 。
 
 ### 配置文件示例
 
@@ -75,7 +92,7 @@ go build
 - `debug` 调试模式。显示所有通信日志，并将无命令的内容直接返回。
 - `proxy` 是代理服务器，支持 `http` 和 `socks5`，不需要时留空字符串。
 - `apikey` Telegram 的会话令牌（去问 [BotFather](https://t.me/BotFather) 要）。
-- `healthcheck` Docker 健康检查用会话文件名，需要和 `Dockerfile` 中的 `HEALTHCHECK` 想对应。
+- `healthcheck` Docker 健康检查用会话文件名，需要和 `Dockerfile` 中的 `HEALTHCHECK` 相对应。
 - `timezone` GMT 时间偏移量，用于显示时间时所用的时区。
 - `whitelist` 是白名单，只允许这些 UID 使用这个 BOT 。
 - `to` 是会话代号（预定义的发送目标）。
