@@ -2,13 +2,13 @@
     "FixedFileInfo": {
         "FileVersion": {
             "Major": 1,
-            "Minor": 0,
+            "Minor": 1,
             "Patch": 0,
             "Build": 0
         },
         "ProductVersion": {
             "Major": 1,
-            "Minor": 0,
+            "Minor": 1,
             "Patch": 0,
             "Build": 0
         },
@@ -38,6 +38,6 @@
             "CharsetID": "04B0"
         }
     },
-    "IconPath": "rc.ico",
+    "IconPath": "icon.ico",
     "ManifestPath": "main.exe.manifest"
 }

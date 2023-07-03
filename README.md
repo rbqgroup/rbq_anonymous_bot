@@ -1,4 +1,6 @@
-# rbq_anonymous_bot
+![icon](macOS/rbqanonymousbot/Assets.xcassets/AppIcon.appiconset/rbq%205.png)
+
+# [RBQ Anonymous Bot v1.1.0](https://github.com/rbqgroup/rbq_anonymous_bot)
 
 频道小编工具：向绒频道和群组匿名发表内容。
 
@@ -8,12 +10,27 @@
 
 - 匿名发送内容到各个频道或群组。
 - 解析推特推文链接，自动移除跟踪代码，拉取并发表推文里面包含的图文。
+  - 由于推特的一系列操作，该功能可能不再可用。
 - 自动为视频信息加 `#视频` 标签。
 - 一起当 _更新姬_ 。
 
+## 安装
+
+从 [Release](releases) 下载相应系统的可执行文件即可，无需安装。
+
+| Release 文件（压缩包）   | 系统    | 最低版 | 位  | 体系结构            |
+| ------------------------ | ------- | ------ | --- | ------------------- |
+| `bin/*_Linux32.zip`      | Linux   | 2.6    | 32  | i386 (x86)          |
+| `bin/*_Linux64.zip`      | Linux   | 2.6    | 64  | amd64(x86-64)       |
+| `bin/*_macOSI64.dmg`     | macOS   | 10.13  | 64  | amd64(x86-64)       |
+| `bin/*_macOSM64.dmg`     | macOS   | 11     | 64  | arm64(AppleSilicon) |
+| `bin/*_Windows32.cab`    | Windows | 7      | 32  | i386 (x86)          |
+| `bin/*_Windows64.cab`    | Windows | 7      | 64  | amd64(x86-64)       |
+| `bin/*_WindowsARM64.cab` | Windows | 10     | 64  | arm64(aarch64)      |
+
 ## 使用
 
-使用 `/会话代号 [内容]` 向预设好的 会话ID 发送内容。
+使用 `/会话代号 [内容]` 向预设好的 会话 ID 发送内容。
 
 - 当传送的内容（除了命令外）只有文本且只是一条 Twitter 链接，则解析该推文（自动取出 评论/转推/喜欢/回复 的数量、推文作者名和昵称、正文、图片、视频）然后发送到目标，并移除跟踪代码，而无需自己上传图文。可以在配置文件中禁用和指定拉取服务器。
   - 注意：这项功能只能用于**文字和图片**推文，视频等其他类型推文不支持。如果开启此功能的情况下发送包含不支持附件的单推文链接将会导致失败。
@@ -34,8 +51,6 @@ go build
 在 Windows x64 中也可以通过批处理一键生成全平台二进制文件：
 
 ```bat
-go build
-MKDIR bin
 build.bat
 ```
 
@@ -57,34 +72,38 @@ build.bat
 6. 让 bot 转发一条消息，等待大约一分钟，该 Docker 容器状态会显示为 `healthy` 。
 7. 如果没有出现停止问题，可以将 RESTART POLICIES 设置为 `Always` 。
 
+### macOS 系统中添加启动参数
+
+1. 打开 Release 中的相应平台的 `.dmg` 文件，找到里面的 `.app` 文件，将其复制到 `应用程序` 文件夹.
+2. 右键点击改 `.app` 文件，选择 `显示包内容` 。
+3. 编辑 `Contents/Resources/run.sh` 脚本文件，在里面注释位置处添加参数。
+
 ### 配置文件示例
 
 ```json
 {
-    "ver": 1,
-    "debug": true,
-    "proxy": "http://127.0.0.1:8080",
-    "apikey": "xxxxxxxxxx:*******-***********-***************",
-    "healthcheck": "healthcheck.lock",
-    "timezone": 8,
-    "timeout": 600,
-    "whitelist": [
-        00000000
-    ],
-    "to": {
-        "d": "C-0000000000000",
-        "g": "G-0000000000000",
-        "c2": "C-0000000000000",
-        "c25": "C-0000000000000",
-        "c3": "C-0000000000000",
-        "g18": "G-0000000000000",
-        "gy": "G-0000000000000"
-    },
-    "nitterHost": "nitter.net",
-    "headVideo": "#视频 ",
-    "headAnimation": "",
-    "headPhoto": "",
-    "headText": ""
+  "ver": 1,
+  "debug": true,
+  "proxy": "http://127.0.0.1:8080",
+  "apikey": "xxxxxxxxxx:*******-***********-***************",
+  "healthcheck": "healthcheck.lock",
+  "timezone": 8,
+  "timeout": 600,
+  "whitelist": [00000000],
+  "to": {
+    "d": "C-0000000000000",
+    "g": "G-0000000000000",
+    "c2": "C-0000000000000",
+    "c25": "C-0000000000000",
+    "c3": "C-0000000000000",
+    "g18": "G-0000000000000",
+    "gy": "G-0000000000000"
+  },
+  "nitterHost": "nitter.net",
+  "headVideo": "#视频 ",
+  "headAnimation": "",
+  "headPhoto": "",
+  "headText": ""
 }
 ```
 
