@@ -20,6 +20,7 @@ type ConfigFile struct {
 	Timeout       int               `json:"timeout"`
 	Whitelist     []int64           `json:"whitelist"`
 	To            map[string]string `json:"to"`
+	DefTo         int64             `json:"defto"`
 	Nitter        string            `json:"nitterHost"`
 	HeadText      string            `json:"headText"`
 	HeadPhoto     string            `json:"headPhoto"`

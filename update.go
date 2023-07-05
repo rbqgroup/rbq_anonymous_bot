@@ -25,15 +25,20 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 		if update.Message == nil || chatID(update, bot) {
 			continue
 		}
-		var isOK bool = false
-		for _, id := range config.Whitelist {
-			println(id, update.Message.Chat.ID)
-			if update.Message.Chat.ID == id {
-				isOK = true
+
+		var text string = update.Message.Text
+		var isCommand = (len(text) > 0 && text[0] == '/')
+		if isCommand {
+			var isOK bool = false
+			for _, id := range config.Whitelist {
+				println(id, update.Message.Chat.ID)
+				if update.Message.Chat.ID == id {
+					isOK = true
+				}
 			}
-		}
-		if !isOK {
-			continue
+			if !isOK {
+				continue
+			}
 		}
 		var mode int8 = 0
 
@@ -45,7 +50,7 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 		var toChat string = ""
 		var toChatID int64 = -1
 		var toChannel bool = false
-		var text string = ""
+		var defaultTo bool = false
 
 		// if update.Message.IsCommand() {
 		// 	var userCommand string = update.Message.Command()
@@ -55,7 +60,6 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 
 		// fromChat = ChatObj{ID: update.Message.Chat.ID, Title: update.Message.Chat.UserName}
 		// fromUser = ChatObj{ID: update.Message.From.ID, Title: update.Message.From.UserName}
-		text = update.Message.Text
 		if len(update.Message.Caption) > 0 {
 			text = update.Message.Caption
 		}
@@ -65,7 +69,7 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 			log.Println("多圖組: ", update.Message.MediaGroupID)
 		}
 
-		if (len(text) > 0 && text[0] == '/') || update.Message.IsCommand() {
+		if isCommand || update.Message.IsCommand() {
 			var textUnit []string = strings.Split(text, " ")
 			var cmd string = textUnit[0]
 			textUnit = textUnit[1:]
@@ -77,6 +81,10 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 				log += " (頻道)"
 			}
 			println(log)
+		} else if update.Message.Chat.ID > 0 && config.DefTo != -1 {
+			toChatID = config.DefTo
+			println(fmt.Sprintf("已指定為預設收件人: %d", toChatID))
+			defaultTo = true
 		}
 		text = filterTwitterURL(text)
 		var isMediaGroup = len(update.Message.MediaGroupID) > 0
@@ -154,6 +162,14 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 			} else {
 				continue
 			}
+		}
+		if defaultTo && ((mode != 2 && mode != 3) || (len(text) == 0 || !strings.Contains(text, "http") || !strings.Contains(text, "://") || !strings.Contains(text, ".") || !strings.Contains(text, "/"))) {
+			toChatID = update.Message.Chat.ID
+			medias = make(map[string][]interface{})
+			isMediaGroup = false
+			mode = 1
+			toChannel = false
+			text = "直接发送给我图片或者视频，同时标注来源链接，可以进行投稿。\n投稿会经过编辑审查后，才会发布到频道。\n当前发送的内容无效喵。"
 		}
 		if !isMediaGroup {
 			switch mode {
