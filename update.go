@@ -81,7 +81,7 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 				log += " (頻道)"
 			}
 			println(log)
-		} else if update.Message.Chat.ID > 0 && config.DefTo != -1 {
+		} else if update.Message.Chat.ID > 0 && update.Message.From.ID > 0 && config.DefTo != -1 {
 			toChatID = config.DefTo
 			println(fmt.Sprintf("已指定為預設收件人: %d", toChatID))
 			defaultTo = true
@@ -157,8 +157,8 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 			}
 		}
 		if toChatID == -1 {
-			if config.Debug {
-				toChatID = update.Message.Chat.ID
+			if update.Message.From.ID == config.Debug {
+				toChatID = config.Debug
 			} else {
 				continue
 			}

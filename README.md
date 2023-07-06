@@ -90,7 +90,7 @@ build.bat
 ```json
 {
   "ver": 1,
-  "debug": true,
+  "debug": -1,
   "proxy": "http://127.0.0.1:8080",
   "apikey": "xxxxxxxxxx:*******-***********-***************",
   "healthcheck": "healthcheck.lock",
@@ -116,7 +116,7 @@ build.bat
 ```
 
 - `var` 配置文件版本号（填 `1` ）。
-- `debug` 调试模式。显示所有通信日志，并将无命令的内容直接返回。
+- `debug` 调试模式。显示所有通信日志，并将无命令的内容直接返回给指定 ID。填写 `-1` 为关闭，填写 ID 为将这些内容转发给这个 ID 。
 - `proxy` 是代理服务器，支持 `http` 和 `socks5`，不需要时留空字符串。
 - `apikey` Telegram 的会话令牌（去问 [BotFather](https://t.me/BotFather) 要）。
 - `healthcheck` Docker 健康检查用会话文件名，需要和 `Dockerfile` 中的 `HEALTHCHECK` 相对应。

@@ -12,7 +12,7 @@ var config ConfigFile
 
 type ConfigFile struct {
 	Ver           int8              `json:"ver"`
-	Debug         bool              `json:"debug"`
+	Debug         int64             `json:"debug"`
 	HealthCheck   string            `json:"healthcheck"`
 	TimeZone      int8              `json:"timezone"`
 	Proxy         string            `json:"proxy"`

@@ -45,8 +45,8 @@ func main() {
 		return
 	}
 
-	bot.Debug = config.Debug
-	if config.Debug {
+	bot.Debug = config.Debug != -1
+	if config.Debug != -1 {
 		log.Printf("已開啟除錯模式")
 	}
 	log.Printf("已登入 %s", bot.Self.UserName)
