@@ -19,7 +19,7 @@ type ChatObj struct {
 }
 
 func main() {
-	fmt.Println("rbq_anonymous_bot v1.1.0")
+	fmt.Println("rbq_anonymous_bot v1.2.0")
 	if !loadConfig() {
 		return
 	}
@@ -46,7 +46,7 @@ func main() {
 	}
 
 	bot.Debug = config.Debug != -1
-	if config.Debug != -1 {
+	if bot.Debug {
 		log.Printf("已開啟除錯模式")
 	}
 	log.Printf("已登入 %s", bot.Self.UserName)

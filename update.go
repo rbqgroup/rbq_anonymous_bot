@@ -25,23 +25,25 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 		if update.Message == nil || chatID(update, bot) {
 			continue
 		}
-
 		var text string = update.Message.Text
-		var isCommand = (len(text) > 0 && text[0] == '/')
+		if len(update.Message.Caption) > 0 {
+			text = update.Message.Caption
+		}
+		var isCommand bool = (len(text) > 0 && text[0] == '/')
 		if isCommand {
 			var isOK bool = false
 			for _, id := range config.Whitelist {
-				println(id, update.Message.Chat.ID)
-				if update.Message.Chat.ID == id {
+				println(id, update.Message.From.ID)
+				if update.Message.From.ID == id {
 					isOK = true
 				}
 			}
 			if !isOK {
+				log.Println("未授權的使用者使用命令: ", update.Message.From.ID)
 				continue
 			}
 		}
 		var mode int8 = 0
-
 		var msg tgbotapi.Chattable
 		// var fromUser ChatObj
 		// var toUser ChatObj
@@ -60,16 +62,21 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 
 		// fromChat = ChatObj{ID: update.Message.Chat.ID, Title: update.Message.Chat.UserName}
 		// fromUser = ChatObj{ID: update.Message.From.ID, Title: update.Message.From.UserName}
-		if len(update.Message.Caption) > 0 {
-			text = update.Message.Caption
-		}
 
+		var message *tgbotapi.Message = update.Message
 		log.Printf("收到來自會話 %s(%d) 裡 %s(%d) 的訊息：%s", update.Message.Chat.UserName, update.Message.Chat.ID, update.Message.From.UserName, update.Message.From.ID, text)
-		if len(update.Message.MediaGroupID) > 0 {
-			log.Println("多圖組: ", update.Message.MediaGroupID)
+		if update.Message.ReplyToMessage != nil { //  && update.Message.ReplyToMessage.From.ID == bot.Self.ID
+			message = update.Message.ReplyToMessage
+			if len(message.Caption) > 0 {
+				text = text + " " + message.Caption
+			}
+			log.Printf("需要轉發的訊息來自 %s (%d): %s\n", message.From.UserName, message.From.ID, message.Text)
 		}
 
-		if isCommand || update.Message.IsCommand() {
+		if len(message.MediaGroupID) > 0 {
+			log.Println("多圖組: ", message.MediaGroupID)
+		}
+		if isCommand { //  || update.Message.IsCommand()
 			var textUnit []string = strings.Split(text, " ")
 			var cmd string = textUnit[0]
 			textUnit = textUnit[1:]
@@ -81,39 +88,39 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 				log += " (頻道)"
 			}
 			println(log)
-		} else if update.Message.Chat.ID > 0 && update.Message.From.ID > 0 && config.DefTo != -1 {
+		} else if update.Message.Chat.ID == update.Message.From.ID && config.DefTo != -1 {
 			toChatID = config.DefTo
 			println(fmt.Sprintf("已指定為預設收件人: %d", toChatID))
 			defaultTo = true
 		}
 		text = filterTwitterURL(text)
-		var isMediaGroup = len(update.Message.MediaGroupID) > 0
+		var isMediaGroup bool = len(message.MediaGroupID) > 0
 		var fileID tgbotapi.FileID
-		if update.Message.Photo != nil || update.Message.Video != nil || update.Message.Animation != nil {
+		if message.Photo != nil || message.Video != nil || message.Animation != nil {
 			var photo tgbotapi.InputMediaPhoto
 			var video tgbotapi.InputMediaVideo
 			var animation tgbotapi.InputMediaAnimation
-			if update.Message.Video != nil {
+			if message.Video != nil {
 				mode = 3
-				fileID = tgbotapi.FileID(update.Message.Video.FileID)
+				fileID = tgbotapi.FileID(message.Video.FileID)
 				video = tgbotapi.NewInputMediaVideo(fileID)
-				if medias[update.Message.MediaGroupID] == nil {
+				if medias[message.MediaGroupID] == nil {
 					text = config.HeadVideo + text
 					video.Caption = text
 				}
-			} else if update.Message.Photo != nil {
+			} else if message.Photo != nil {
 				mode = 2
-				fileID = tgbotapi.FileID(update.Message.Photo[0].FileID)
+				fileID = tgbotapi.FileID(message.Photo[0].FileID)
 				photo = tgbotapi.NewInputMediaPhoto(fileID)
-				if medias[update.Message.MediaGroupID] == nil {
+				if medias[message.MediaGroupID] == nil {
 					text = config.HeadPhoto + text
 					photo.Caption = text
 				}
-			} else if update.Message.Animation != nil {
+			} else if message.Animation != nil {
 				mode = 4
-				fileID = tgbotapi.FileID(update.Message.Animation.FileID)
+				fileID = tgbotapi.FileID(message.Animation.FileID)
 				animation = tgbotapi.NewInputMediaAnimation(fileID)
-				if medias[update.Message.MediaGroupID] == nil {
+				if medias[message.MediaGroupID] == nil {
 					text = config.HeadAnimation + text
 					animation.Caption = text
 				}
@@ -121,24 +128,24 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 			println("收到的資訊型別: ", modeString[mode])
 			if isMediaGroup {
 				var nMedia []interface{} = make([]interface{}, 0)
-				if toChannel || len(tousrs[update.Message.MediaGroupID]) == 0 {
-					tousrs[update.Message.MediaGroupID] = toChat
+				if toChannel || len(tousrs[message.MediaGroupID]) == 0 {
+					tousrs[message.MediaGroupID] = toChat
 				}
 				if mode == 2 {
-					if medias[update.Message.MediaGroupID] != nil {
-						nMedia = append(medias[update.Message.MediaGroupID], photo)
+					if medias[message.MediaGroupID] != nil {
+						nMedia = append(medias[message.MediaGroupID], photo)
 					} else {
 						nMedia = append(nMedia, photo)
 					}
 				} else if mode == 3 {
-					if medias[update.Message.MediaGroupID] != nil {
-						nMedia = append(medias[update.Message.MediaGroupID], video)
+					if medias[message.MediaGroupID] != nil {
+						nMedia = append(medias[message.MediaGroupID], video)
 					} else {
 						nMedia = append(nMedia, video)
 					}
 				} else if mode == 4 {
-					if medias[update.Message.MediaGroupID] != nil {
-						nMedia = append(medias[update.Message.MediaGroupID], animation)
+					if medias[message.MediaGroupID] != nil {
+						nMedia = append(medias[message.MediaGroupID], animation)
 					} else {
 						nMedia = append(nMedia, animation)
 					}
@@ -208,13 +215,13 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 				health(true)
 			}
 		} else {
-			if timers[update.Message.MediaGroupID] == nil {
+			var MediaGroupID string = update.Message.MediaGroupID
+			if timers[MediaGroupID] == nil {
 				newTicker := time.NewTicker(3 * time.Second)
-				timers[update.Message.MediaGroupID] = newTicker
-				var MediaGroupID = update.Message.MediaGroupID
+				timers[MediaGroupID] = newTicker
 				go func() {
 					<-newTicker.C
-					// println("提交媒體", update.Message.MediaGroupID, len(medias[update.Message.MediaGroupID]))
+					// println("提交媒體", MediaGroupID, len(medias[MediaGroupID]))
 					timers[MediaGroupID].Stop()
 					var mediaGroup []interface{} = medias[MediaGroupID]
 					if len(mediaGroup) > 0 {

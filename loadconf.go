@@ -37,7 +37,7 @@ func cmdTChat(cmd string) (bool, string) {
 			return strings.HasPrefix(v, "C"), v[1:]
 		}
 	}
-	log.Println("找不到预设发送目标", cmd)
+	log.Println("找不到预设发送目标: ", cmd)
 	return false, ""
 }
 

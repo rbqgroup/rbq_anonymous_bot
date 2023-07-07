@@ -2,13 +2,13 @@
     "FixedFileInfo": {
         "FileVersion": {
             "Major": 1,
-            "Minor": 1,
+            "Minor": 2,
             "Patch": 0,
             "Build": 0
         },
         "ProductVersion": {
             "Major": 1,
-            "Minor": 1,
+            "Minor": 2,
             "Patch": 0,
             "Build": 0
         },
@@ -22,14 +22,14 @@
         "Comments": "绒布球频道更新姬",
         "CompanyName": "神楽坂雅詩",
         "FileDescription": "绒布球频道更新姬",
-        "FileVersion": "v1.1.0.0",
+        "FileVersion": "v1.2.0.0",
         "InternalName": "rbq_anonymous_bot",
         "LegalCopyright": "2022, rbqgroup.",
         "LegalTrademarks": "",
         "OriginalFilename": "main.exe",
         "PrivateBuild": "",
         "ProductName": "绒布球频道 BOT",
-        "ProductVersion": "v1.1.0.0",
+        "ProductVersion": "v1.2.0.0",
         "SpecialBuild": ""
     },
     "VarFileInfo": {

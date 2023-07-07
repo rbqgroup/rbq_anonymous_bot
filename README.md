@@ -1,6 +1,6 @@
 ![icon](macOS/rbqanonymousbot/Assets.xcassets/AppIcon.appiconset/rbq%205.png)
 
-# [RBQ Anonymous Bot v1.1.0](https://github.com/rbqgroup/rbq_anonymous_bot)
+# [RBQ Anonymous Bot v1.2.0](https://github.com/rbqgroup/rbq_anonymous_bot)
 
 频道小编工具：向绒频道和群组匿名发表内容。
 
@@ -31,9 +31,13 @@
 
 ## 使用
 
+**本 bot 仅支持 supergroup 群组！**
+
 ### 观众投稿收件箱
 
 直接私聊发送图片或视频，并附带来源链接，将会自动将这些内容转发到设置好的投稿接收频道/群组中，等待编辑进行审核处理。
+
+**在投稿收件箱群组中，本 bot 必须为管理员！**
 
 ### 管理员投稿到频道
 
@@ -99,6 +103,7 @@ build.bat
   "whitelist": [00000000],
   "defto": -000000000,
   "to": {
+    "t": "G-0000000000000",
     "d": "C-0000000000000",
     "g": "G-0000000000000",
     "c2": "C-0000000000000",
@@ -116,7 +121,7 @@ build.bat
 ```
 
 - `var` 配置文件版本号（填 `1` ）。
-- `debug` 调试模式。显示所有通信日志，并将无命令的内容直接返回给指定 ID。填写 `-1` 为关闭，填写 ID 为将这些内容转发给这个 ID 。
+- `debug` 调试模式。显示所有通信日志，并将无命令的内容直接返回给指定 ID。填写 `-1` 为关闭，填写 `0` 为仅开启，填写 用户ID 为开启并将这个 用户ID 在任意处发的内容都转发给这个 用户ID 。
 - `proxy` 是代理服务器，支持 `http` 和 `socks5`，不需要时留空字符串。
 - `apikey` Telegram 的会话令牌（去问 [BotFather](https://t.me/BotFather) 要）。
 - `healthcheck` Docker 健康检查用会话文件名，需要和 `Dockerfile` 中的 `HEALTHCHECK` 相对应。
