@@ -21,7 +21,7 @@ type ConfigFile struct {
 	Whitelist     []int64           `json:"whitelist"`
 	To            map[string]string `json:"to"`
 	DefTo         int64             `json:"defto"`
-	Nitter        string            `json:"nitterHost"`
+	Nitter        []string          `json:"nitterHost"`
 	HeadText      string            `json:"headText"`
 	HeadPhoto     string            `json:"headPhoto"`
 	HeadVideo     string            `json:"headVideo"`
@@ -32,8 +32,12 @@ func cmdTChat(cmd string) (bool, string) {
 	if len(cmd) == 0 {
 		return false, ""
 	}
+	var cmdU []string = strings.Split(cmd[1:], "@")
+	if len(cmdU) > 1 && cmdU[1] != bot.Self.UserName {
+		return false, ""
+	}
 	for k, v := range config.To {
-		if cmd[1:] == k {
+		if cmdU[0] == k {
 			return strings.HasPrefix(v, "C"), v[1:]
 		}
 	}

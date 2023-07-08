@@ -32,6 +32,80 @@ type Tweet struct {
 	MediaNum  int8
 }
 
+type Nitter struct {
+	Host   string
+	Enable bool
+	OK     int64
+	Fail   int64
+}
+
+var nitterI = 0
+var nitters []Nitter = []Nitter{}
+
+func initNitter() {
+	for _, v := range config.Nitter {
+		var nitter Nitter = Nitter{
+			Host:   v,
+			Enable: true,
+			OK:     0,
+			Fail:   0,
+		}
+		nitters = append(nitters, nitter)
+	}
+}
+
+func nowNitter() Nitter {
+	var enableCount int8 = 0
+	for _, v := range nitters {
+		if v.Enable {
+			enableCount++
+		}
+	}
+	if enableCount == 0 {
+		println("所有的 Nitter Host 均遇到错误，重置。")
+		for i, _ := range nitters {
+			nitters[i].Enable = true
+		}
+	}
+	var nitter Nitter = nitters[nitterI]
+	nitterI++
+	if nitterI >= len(nitters) {
+		nitterI = 0
+	}
+	var nextNitter Nitter = nitters[nitterI]
+	if !nextNitter.Enable {
+		nitterI++
+	}
+	if nitterI >= len(nitters) {
+		nitterI = 0
+	}
+	return nitter
+}
+
+func nitterInfo() string {
+	var infos []string = []string{
+		fmt.Sprintf("[Nitter 状态 (%d)]", len(nitters)),
+	}
+	for _, v := range nitters {
+		var percentage int = 0
+		if v.OK+v.Fail > 0 {
+			percentage = int(v.OK * 100 / (v.OK + v.Fail))
+		}
+		var nameU []string = strings.Split(v.Host, ".")
+		var name string = v.Host
+		if len(nameU) >= 2 {
+			name = nameU[len(nameU)-2]
+		}
+		var enable string = "启用"
+		if !v.Enable {
+			enable = "禁用"
+		}
+		var info string = fmt.Sprintf("%s (%s):  成功 %d  失败 %d  (%d %%)", name, enable, v.OK, v.Fail, percentage)
+		infos = append(infos, info)
+	}
+	return strings.Join(infos, "\n")
+}
+
 func tweetPush(update tgbotapi.Update, bot *tgbotapi.BotAPI, text string, toChannel bool, toChat string) {
 	var tweet Tweet = tweetGET(text)
 	if !tweet.Success {
@@ -113,9 +187,11 @@ func tweetPush(update tgbotapi.Update, bot *tgbotapi.BotAPI, text string, toChan
 		mode = 5
 	}
 	if _, err := bot.Send(msg); err != nil {
+		dataCounts[2]++
 		log.Printf("向 %d 傳送 %s类型 訊息失敗: %s\n", toChatID, modeString[mode], err)
 		health(false)
 	} else {
+		dataCounts[1]++
 		log.Printf("已向 %d 傳送 %s类型 訊息: %s\n", toChatID, modeString[mode], text)
 		health(true)
 	}
@@ -204,17 +280,22 @@ func tweetGET(url string) Tweet {
 		println("這是一個推特連結，開始清理額外引數。")
 		tweet.URL = strings.Split(tweet.URL, "?")[0]
 		println("目標連結:", tweet.URL)
-		println("選擇 Nitter Node:", config.Nitter)
-		tweet.NitterURL = strings.Replace(tweet.URL, "twitter.com/", config.Nitter+"/", 1)
+		var nitter Nitter = nowNitter()
+		println("選擇 Nitter Node:", nitter.Host)
+		tweet.NitterURL = strings.Replace(tweet.URL, "twitter.com/", nitter.Host+"/", 1)
 		println("正在載入:", tweet.NitterURL)
 		res, err := http.Get(tweet.NitterURL)
 		if err != nil {
 			println("載入失敗:", tweet.NitterURL)
+			nitters[nitterI].Enable = false
+			nitters[nitterI].Fail++
 			return tweet
 		}
 		defer res.Body.Close()
 		if res.StatusCode != 200 {
 			println("載入失敗:", res.StatusCode, res.Status)
+			nitters[nitterI].Enable = false
+			nitters[nitterI].Fail++
 			return tweet
 		}
 		println("載入成功:", res.StatusCode, res.Status)
@@ -227,6 +308,8 @@ func tweetGET(url string) Tweet {
 		var tweetUsernames []*html.Node = doc.Find(".main-tweet .timeline-item .tweet-body .tweet-header .username").Nodes
 		if len(tweetUsernames) == 0 {
 			println("解析推文作者帳號失敗")
+			nitters[nitterI].Enable = false
+			nitters[nitterI].Fail++
 			return tweet
 		} else {
 			tweet.Username = tweetUsernames[0].FirstChild.Data
@@ -244,7 +327,6 @@ func tweetGET(url string) Tweet {
 		var tweetTimes []*html.Node = doc.Find(".main-tweet .timeline-item .tweet-body .tweet-published").Nodes
 		if len(tweetTimes) == 0 {
 			println("解析推文時間失敗")
-			return tweet
 		} else {
 			tweet.Time = tweetTimes[0].FirstChild.Data
 			println("推文時間:", tweet.Time)
@@ -252,7 +334,6 @@ func tweetGET(url string) Tweet {
 		var tweetStats []*html.Node = doc.Find(".main-tweet .timeline-item .tweet-body .tweet-stats .icon-container").Nodes
 		if len(tweetStats) == 0 {
 			println("解析推文統計失敗")
-			return tweet
 		} else {
 			var tweetStatTitle []string = []string{"回覆", "轉推", "引用", "喜歡"}
 			var tweetStatNum []int = []int{0, 0, 0, 0}
@@ -277,7 +358,6 @@ func tweetGET(url string) Tweet {
 		var tweetContents []*html.Node = doc.Find(".main-tweet .timeline-item .tweet-body .tweet-content").Nodes
 		if len(tweetContents) == 0 {
 			println("解析推文內容失敗")
-			return tweet
 		} else {
 			var tweetContent *html.Node = tweetContents[0]
 			for c := tweetContent.FirstChild; c != nil; c = c.NextSibling {
@@ -320,6 +400,7 @@ func tweetGET(url string) Tweet {
 			}
 		}
 	}
+	nitters[nitterI].OK++
 	tweet.Success = true
 	return tweet
 }
