@@ -22,6 +22,7 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 	var tousrs map[string]string = make(map[string]string)
 
 	for update := range updates {
+		dataCounts[0]++
 		if update.Message == nil || chatID(update, bot) {
 			continue
 		}
@@ -208,9 +209,11 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 				return
 			}
 			if _, err := bot.Send(msg); err != nil {
+				dataCounts[2]++
 				log.Printf("向 %d 傳送 %s类型 訊息失敗: %s\n", toChatID, modeString[mode], err)
 				health(false)
 			} else {
+				dataCounts[1]++
 				log.Printf("已向 %d 傳送 %s类型 訊息: %s\n", toChatID, modeString[mode], text)
 				health(true)
 			}
@@ -229,9 +232,11 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 						var mediaGroupMsg tgbotapi.MediaGroupConfig = tgbotapi.NewMediaGroup(to, mediaGroup)
 						msg = mediaGroupMsg
 						if _, err := bot.Send(msg); err != nil {
+							dataCounts[2]++
 							log.Printf("向 %d 傳送多圖訊息失敗: %s", to, err)
 							health(false)
 						} else {
+							dataCounts[1]++
 							log.Printf("已向 %d 傳送多圖訊息: %s", to, text)
 							health(true)
 						}

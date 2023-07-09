@@ -8,18 +8,26 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"golang.org/x/net/proxy"
 )
+
+var startTime time.Time = time.Now()
+var dataCounts []int64 = []int64{0, 0, 0} //收發錯
 
 type ChatObj struct {
 	ID    int64
 	Title string
 }
 
+const botvar string = "v1.2.1"
+
+var bot *tgbotapi.BotAPI
+
 func main() {
-	fmt.Println("rbq_anonymous_bot v1.2.0")
+	fmt.Println("rbq_anonymous_bot " + botvar)
 	if !loadConfig() {
 		return
 	}
@@ -39,7 +47,8 @@ func main() {
 		}
 		client.Transport = tgTransport
 	}
-	bot, err := tgbotapi.NewBotAPIWithClient(config.Apikey, "https://api.telegram.org/bot%s/%s", client)
+	var err error
+	bot, err = tgbotapi.NewBotAPIWithClient(config.Apikey, "https://api.telegram.org/bot%s/%s", client)
 	if err != nil {
 		log.Printf("連線伺服器出現問題: %s\n", err)
 		return
@@ -47,9 +56,10 @@ func main() {
 
 	bot.Debug = config.Debug != -1
 	if bot.Debug {
-		log.Printf("已開啟除錯模式")
+		log.Printf("已開啟除錯模式\n")
 	}
-	log.Printf("已登入 %s", bot.Self.UserName)
+	log.Printf("已登入 %s %s (%s)\n", bot.Self.FirstName, bot.Self.LastName, bot.Self.UserName)
+	initNitter()
 
 	go getUpdates(bot)
 
