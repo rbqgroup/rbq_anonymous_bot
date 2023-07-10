@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"time"
 )
@@ -22,28 +23,28 @@ func health(isOK bool) {
 		if checkFileIsExist(path) {
 			healthFile, err = os.OpenFile(path, os.O_WRONLY, 0666)
 			if err != nil {
-				println("健康檢查記錄檔案開啟失敗:", err)
+				log.Println("健康檢查記錄檔案開啟失敗:", err)
 			}
 		} else {
 			healthFile, err = os.Create(path)
 			if err != nil {
-				println("健康檢查記錄檔案建立失敗:", err)
+				log.Println("健康檢查記錄檔案建立失敗:", err)
 			}
 		}
 		var timeUnix int64 = time.Now().Unix()
 		_, err = healthFile.Write([]byte(fmt.Sprintf("%d", timeUnix)))
 		if err != nil {
-			println("健康檢查記錄檔案寫入失敗:", err)
+			log.Println("健康檢查記錄檔案寫入失敗:", err)
 		}
 		err = healthFile.Close()
 		if err != nil {
-			println("健康檢查記錄檔案關閉失敗:", err)
+			log.Println("健康檢查記錄檔案關閉失敗:", err)
 		}
 	} else {
 		if checkFileIsExist(path) {
 			err = os.Remove(path)
 			if err != nil {
-				println("健康檢查記錄檔案刪除失敗:", err)
+				log.Println("健康檢查記錄檔案刪除失敗:", err)
 			}
 		}
 	}

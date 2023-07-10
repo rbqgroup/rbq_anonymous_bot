@@ -18,7 +18,6 @@ func chatID(update tgbotapi.Update, bot *tgbotapi.BotAPI) bool {
 	var runTime time.Duration = time.Since(startTime)
 	var permissions string = "标准"
 	for _, id := range config.Whitelist {
-		println(id, update.Message.From.ID)
 		if update.Message.From.ID == id {
 			permissions = "管理员"
 		}
@@ -49,10 +48,10 @@ func chatID(update tgbotapi.Update, bot *tgbotapi.BotAPI) bool {
 	msg.ReplyToMessageID = update.Message.MessageID
 	if _, err := bot.Send(msg); err != nil {
 		dataCounts[2]++
-		log.Printf("发送消息失败: %s", err)
+		log.Printf("发送消息失败[A]: %s", err)
 	} else {
 		dataCounts[1]++
 	}
-	println(text)
+	log.Println(text)
 	return true
 }

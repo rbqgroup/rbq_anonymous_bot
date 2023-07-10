@@ -1,6 +1,6 @@
 ![icon](macOS/rbqanonymousbot/Assets.xcassets/AppIcon.appiconset/rbq%205.png)
 
-# [RBQ Anonymous Bot v1.2.1](https://github.com/rbqgroup/rbq_anonymous_bot)
+# [RBQ Anonymous Bot v1.2.2](https://github.com/rbqgroup/rbq_anonymous_bot)
 
 频道小编工具：向绒频道和群组匿名发表内容。
 
@@ -83,7 +83,7 @@ build.bat
 3. 修改 `./docker.sh` 为需要的 Docker 操作。
 4. 将 `bin/rbq_anonymous_bot.xz` + `config.json` + `Dockerfile` + `docker.sh` 复制到服务器中的同一个文件夹中。
 5. 进入服务器中的该文件夹，执行 `chmod +x docker.sh` 和 `./docker.sh` 即可运行
-6. 让 bot 转发一条消息，等待大约一分钟，该 Docker 容器状态会显示为 `healthy` 。
+6. 让 bot 转发一条消息或与 bot 私聊输入 `/<bot用户名>`，等待大约一分钟，该 Docker 容器状态会显示为 `healthy` 。
 7. 如果没有出现停止问题，可以将 RESTART POLICIES 设置为 `Always` 。
 
 ### macOS 系统中添加启动参数
