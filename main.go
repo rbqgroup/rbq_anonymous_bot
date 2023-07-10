@@ -2,7 +2,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"net/url"
@@ -22,12 +21,12 @@ type ChatObj struct {
 	Title string
 }
 
-const botvar string = "v1.2.1"
+const botvar string = "v1.2.2"
 
 var bot *tgbotapi.BotAPI
 
 func main() {
-	fmt.Println("rbq_anonymous_bot " + botvar)
+	log.Println("rbq_anonymous_bot " + botvar)
 	if !loadConfig() {
 		return
 	}
@@ -66,11 +65,29 @@ func main() {
 	signalch := make(chan os.Signal, 1)
 	signal.Notify(signalch, os.Interrupt, os.Kill)
 	signal := <-signalch
-	fmt.Println("收到系統訊號: ", signal)
+	log.Println("收到系統訊號: ", signal)
 	if signal == os.Interrupt || signal == os.Kill {
 		bot.StopReceivingUpdates()
 		client.CloseIdleConnections()
-		fmt.Println("終止 BOT")
+		log.Println("終止 BOT")
 		os.Exit(0)
 	}
+}
+
+func logCaches(lines []string) {
+	if len(lines) == 0 {
+		return
+	}
+	for _, line := range lines {
+		log.Println(line)
+	}
+}
+
+func in(s string, arr []string) bool {
+	for _, v := range arr {
+		if s == v {
+			return true
+		}
+	}
+	return false
 }

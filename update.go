@@ -19,7 +19,7 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 
 	var timers map[string]*time.Ticker = make(map[string]*time.Ticker)
 	var medias map[string][]interface{} = make(map[string][]interface{})
-	var tousrs map[string]string = make(map[string]string)
+	var tousrs map[string]int64 = make(map[string]int64)
 
 	for update := range updates {
 		dataCounts[0]++
@@ -34,7 +34,6 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 		if isCommand {
 			var isOK bool = false
 			for _, id := range config.Whitelist {
-				println(id, update.Message.From.ID)
 				if update.Message.From.ID == id {
 					isOK = true
 				}
@@ -58,23 +57,24 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 		// if update.Message.IsCommand() {
 		// 	var userCommand string = update.Message.Command()
 		// 	var userCommandArg string = update.Message.CommandArguments()
-		// 	println("收到指令: ", userCommand, userCommandArg)
+		// 	log.Println("收到指令: ", userCommand, userCommandArg)
 		// }
 
 		// fromChat = ChatObj{ID: update.Message.Chat.ID, Title: update.Message.Chat.UserName}
 		// fromUser = ChatObj{ID: update.Message.From.ID, Title: update.Message.From.UserName}
-
+		var logCache []string = []string{}
 		var message *tgbotapi.Message = update.Message
-		log.Printf("收到來自會話 %s(%d) 裡 %s(%d) 的訊息：%s", update.Message.Chat.UserName, update.Message.Chat.ID, update.Message.From.UserName, update.Message.From.ID, text)
+		logCache = append(logCache, fmt.Sprintf("收到來自會話 %s(%d) 裡 %s(%d) 的訊息：%s", update.Message.Chat.UserName, update.Message.Chat.ID, update.Message.From.UserName, update.Message.From.ID, text))
+		_, inTousrs := tousrs[message.MediaGroupID]
 		if update.Message.ReplyToMessage != nil { //  && update.Message.ReplyToMessage.From.ID == bot.Self.ID
 			message = update.Message.ReplyToMessage
 			if len(message.Caption) > 0 {
 				text = text + " " + message.Caption
 			}
-			log.Printf("需要轉發的訊息來自 %s (%d): %s\n", message.From.UserName, message.From.ID, message.Text)
+			logCache = append(logCache, fmt.Sprintf("需要轉發的訊息來自 %s (%d): %s\n", message.From.UserName, message.From.ID, message.Text))
 		}
-
-		if len(message.MediaGroupID) > 0 {
+		var isMediaGroup bool = len(message.MediaGroupID) > 0
+		if isMediaGroup {
 			log.Println("多圖組: ", message.MediaGroupID)
 		}
 		if isCommand { //  || update.Message.IsCommand()
@@ -84,18 +84,17 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 			text = strings.Join(textUnit, " ")
 			toChannel, toChat = cmdTChat(cmd)
 			toChatID, _ = strconv.ParseInt(toChat, 10, 64)
-			var log = fmt.Sprintf("已指定收件人: %d", toChatID)
+			var logt = fmt.Sprintf("已指定收件人: %d", toChatID)
 			if toChannel {
-				log += " (頻道)"
+				logt += " (頻道)"
 			}
-			println(log)
-		} else if update.Message.Chat.ID == update.Message.From.ID && config.DefTo != -1 {
+			logCache = append(logCache, logt)
+		} else if !inTousrs && update.Message.Chat.ID == update.Message.From.ID && config.DefTo != -1 {
 			toChatID = config.DefTo
-			println(fmt.Sprintf("已指定為預設收件人: %d", toChatID))
+			logCache = append(logCache, fmt.Sprintf("已指定為預設收件人: %d", toChatID))
 			defaultTo = true
 		}
 		text = filterTwitterURL(text)
-		var isMediaGroup bool = len(message.MediaGroupID) > 0
 		var fileID tgbotapi.FileID
 		if message.Photo != nil || message.Video != nil || message.Animation != nil {
 			var photo tgbotapi.InputMediaPhoto
@@ -126,11 +125,11 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 					animation.Caption = text
 				}
 			}
-			println("收到的資訊型別: ", modeString[mode])
+			logCache = append(logCache, fmt.Sprintf("收到的資訊型別: %s", modeString[mode]))
 			if isMediaGroup {
 				var nMedia []interface{} = make([]interface{}, 0)
-				if toChannel || len(tousrs[message.MediaGroupID]) == 0 {
-					tousrs[message.MediaGroupID] = toChat
+				if toChannel || !inTousrs {
+					tousrs[message.MediaGroupID] = toChatID
 				}
 				if mode == 2 {
 					if medias[message.MediaGroupID] != nil {
@@ -152,14 +151,15 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 					}
 				}
 				medias[update.Message.MediaGroupID] = nMedia
-				// println("新增媒體", update.Message.MediaGroupID, len(medias[update.Message.MediaGroupID]))
+				// log.Println("新增媒體", update.Message.MediaGroupID, len(medias[update.Message.MediaGroupID]))
 			}
 		} else if len(text) > 0 {
 			mode = 1
 			text = config.HeadText + text
-			println("收到的資訊型別: ", modeString[mode])
-			if len(config.Nitter) > 0 && tweetGETchk(text) {
-				println("有且僅有一個推特連結，開始解析。")
+			logCache = append(logCache, fmt.Sprintf("收到的資訊型別: %s", modeString[mode]))
+			if update.Message.Chat.ID == update.Message.From.ID && len(config.Nitter) > 0 && tweetGETchk(text) {
+				logCache = append(logCache, "有且僅有一個推特連結，開始解析。")
+				logCaches(logCache)
 				go tweetPush(update, bot, text, toChannel, toChat)
 				continue
 			}
@@ -171,7 +171,8 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 				continue
 			}
 		}
-		if defaultTo && ((mode != 2 && mode != 3) || (len(text) == 0 || !strings.Contains(text, "http") || !strings.Contains(text, "://") || !strings.Contains(text, ".") || !strings.Contains(text, "/"))) {
+		if defaultTo && (mode != 2 && mode != 3 && !inTousrs || (len(text) == 0 || !strings.Contains(text, "http") || !strings.Contains(text, "://") || !strings.Contains(text, ".") || !strings.Contains(text, "/"))) && inTousrs {
+			logCache = append(logCache, fmt.Sprintf("無效投稿: mode%d: %s\n", mode, text))
 			toChatID = update.Message.Chat.ID
 			medias = make(map[string][]interface{})
 			isMediaGroup = false
@@ -208,9 +209,10 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 			default:
 				return
 			}
+			logCaches(logCache)
 			if _, err := bot.Send(msg); err != nil {
 				dataCounts[2]++
-				log.Printf("向 %d 傳送 %s类型 訊息失敗: %s\n", toChatID, modeString[mode], err)
+				log.Printf("向 %d 傳送 %s类型 訊息失敗[N]: %s\n", toChatID, modeString[mode], err)
 				health(false)
 			} else {
 				dataCounts[1]++
@@ -219,25 +221,28 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 			}
 		} else {
 			var MediaGroupID string = update.Message.MediaGroupID
+			if !inTousrs {
+				tousrs[MediaGroupID] = toChatID
+			}
 			if timers[MediaGroupID] == nil {
 				newTicker := time.NewTicker(3 * time.Second)
 				timers[MediaGroupID] = newTicker
 				go func() {
 					<-newTicker.C
-					// println("提交媒體", MediaGroupID, len(medias[MediaGroupID]))
+					// logCache = append(logCache, fmt.Sprintf("提交媒體 %s %d", MediaGroupID, len(medias[MediaGroupID])))
 					timers[MediaGroupID].Stop()
 					var mediaGroup []interface{} = medias[MediaGroupID]
 					if len(mediaGroup) > 0 {
-						to, _ := strconv.ParseInt(tousrs[MediaGroupID], 10, 64)
-						var mediaGroupMsg tgbotapi.MediaGroupConfig = tgbotapi.NewMediaGroup(to, mediaGroup)
+						var mediaGroupMsg tgbotapi.MediaGroupConfig = tgbotapi.NewMediaGroup(tousrs[MediaGroupID], mediaGroup)
 						msg = mediaGroupMsg
+						logCaches(logCache)
 						if _, err := bot.Send(msg); err != nil {
 							dataCounts[2]++
-							log.Printf("向 %d 傳送多圖訊息失敗: %s", to, err)
+							log.Printf("向 %d 傳送多圖訊息失敗[G]: %s", tousrs[MediaGroupID], err)
 							health(false)
 						} else {
 							dataCounts[1]++
-							log.Printf("已向 %d 傳送多圖訊息: %s", to, text)
+							log.Printf("已向 %d 傳送多圖訊息: %s", tousrs[MediaGroupID], text)
 							health(true)
 						}
 					}
