@@ -62,7 +62,7 @@ func nowNitter() Nitter {
 		}
 	}
 	if enableCount == 0 {
-		println("所有的 Nitter Host 均遇到错误，重置。")
+		log.Println("所有的 Nitter Host 均遇到错误，重置。")
 		for i, _ := range nitters {
 			nitters[i].Enable = true
 		}
@@ -109,7 +109,7 @@ func nitterInfo() string {
 func tweetPush(update tgbotapi.Update, bot *tgbotapi.BotAPI, text string, toChannel bool, toChat string) {
 	var tweet Tweet = tweetGET(text)
 	if !tweet.Success {
-		println("推特解析失敗。")
+		log.Println("推特解析失敗。")
 		return
 	}
 	toChatID, _ := strconv.ParseInt(toChat, 10, 64)
@@ -188,7 +188,7 @@ func tweetPush(update tgbotapi.Update, bot *tgbotapi.BotAPI, text string, toChan
 	}
 	if _, err := bot.Send(msg); err != nil {
 		dataCounts[2]++
-		log.Printf("向 %d 傳送 %s类型 訊息失敗: %s\n", toChatID, modeString[mode], err)
+		log.Printf("向 %d 傳送 %s类型 訊息失敗[T]: %s\n", toChatID, modeString[mode], err)
 		health(false)
 	} else {
 		dataCounts[1]++
@@ -198,10 +198,11 @@ func tweetPush(update tgbotapi.Update, bot *tgbotapi.BotAPI, text string, toChan
 }
 
 func timeFormat(timeStr string) string {
-	var layout string = "Jan 02, 2006 · 3:04 PM UTC" // UTC = GMT + 0
+	// "Jul 6, 2023 \xc2\xb7 5:49 PM UTC" as "Jan 02, 2006 \xc2\xb7 3:04 PM UTC": cannot parse "6, 2023 \xc2\xb7 5:49 PM UTC" as "02"
+	var layout string = "Jan 2, 2006 · 3:04 PM UTC" // UTC = GMT + 0
 	nTime, err := time.Parse(layout, timeStr)
 	if err != nil {
-		fmt.Println("時間格式化失敗", timeStr, err)
+		log.Println("時間格式化失敗", timeStr, err)
 		return timeStr
 	}
 	nTime = nTime.Add(time.Hour * time.Duration(config.TimeZone))
@@ -235,7 +236,7 @@ func timeFormat(timeStr string) string {
 		timeZoneStr = fmt.Sprintf("+%d", config.TimeZone)
 	}
 	newStr += " (GMT" + timeZoneStr + ")"
-	var timeEmoji []string = strings.Split("🕛🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚", "")
+	var timeEmoji []string = []string{"🕛", "🕐", "🕑", "🕒", "🕓", "🕔", "🕕", "🕖", "🕗", "🕘", "🕙", "🕚"}
 	var timeEmojiN string = timeEmoji[3]
 	if th >= 12 {
 		timeEmojiN = timeEmoji[th-12]
@@ -246,7 +247,7 @@ func timeFormat(timeStr string) string {
 }
 
 func tweetGETchk(url string) bool {
-	if !strings.Contains(url, "twitter.com/") {
+	if !strings.Contains(url, "://twitter.com/") {
 		return false
 	}
 	if len(strings.Split(url, " ")) != 1 {
@@ -275,65 +276,65 @@ func tweetGET(url string) Tweet {
 		flag.Usage()
 		return tweet
 	}
-	println("目標連結:", tweet.URL)
+	log.Println("目標連結:", tweet.URL)
 	if strings.Contains(tweet.URL, "twitter.com/") {
-		println("這是一個推特連結，開始清理額外引數。")
+		log.Println("這是一個推特連結，開始清理額外引數。")
 		tweet.URL = strings.Split(tweet.URL, "?")[0]
-		println("目標連結:", tweet.URL)
+		log.Println("目標連結:", tweet.URL)
 		var nitter Nitter = nowNitter()
-		println("選擇 Nitter Node:", nitter.Host)
+		log.Println("選擇 Nitter Node:", nitter.Host)
 		tweet.NitterURL = strings.Replace(tweet.URL, "twitter.com/", nitter.Host+"/", 1)
-		println("正在載入:", tweet.NitterURL)
+		log.Println("正在載入:", tweet.NitterURL)
 		res, err := http.Get(tweet.NitterURL)
 		if err != nil {
-			println("載入失敗:", tweet.NitterURL)
+			log.Println("載入失敗:", tweet.NitterURL)
 			nitters[nitterI].Enable = false
 			nitters[nitterI].Fail++
 			return tweet
 		}
 		defer res.Body.Close()
 		if res.StatusCode != 200 {
-			println("載入失敗:", res.StatusCode, res.Status)
+			log.Println("載入失敗:", res.StatusCode, res.Status)
 			nitters[nitterI].Enable = false
 			nitters[nitterI].Fail++
 			return tweet
 		}
-		println("載入成功:", res.StatusCode, res.Status)
+		log.Println("載入成功:", res.StatusCode, res.Status)
 		// Load the HTML document
 		doc, err := goquery.NewDocumentFromReader(res.Body)
 		if err != nil {
-			println("解析資料失敗:", err)
+			log.Println("解析資料失敗:", err)
 		}
-		println("解析資料成功，解析推文...")
+		log.Println("解析資料成功，解析推文...")
 		var tweetUsernames []*html.Node = doc.Find(".main-tweet .timeline-item .tweet-body .tweet-header .username").Nodes
 		if len(tweetUsernames) == 0 {
-			println("解析推文作者帳號失敗")
+			log.Println("解析推文作者帳號失敗")
 			nitters[nitterI].Enable = false
 			nitters[nitterI].Fail++
 			return tweet
 		} else {
 			tweet.Username = tweetUsernames[0].FirstChild.Data
-			println("推文作者帳號:", tweet.Username)
+			log.Println("推文作者帳號:", tweet.Username)
 		}
 		var tweetFullnames []*html.Node = doc.Find(".main-tweet .timeline-item .tweet-body .tweet-header .fullname").Nodes
 		if len(tweetFullnames) == 0 {
-			println("解析推文作者暱稱失敗")
+			log.Println("解析推文作者暱稱失敗")
 			tweet.Fullname = tweetUsernames[0].FirstChild.Data
-			println("使用帳號名:", tweet.Username)
+			log.Println("使用帳號名:", tweet.Username)
 		} else {
 			tweet.Fullname = tweetFullnames[0].FirstChild.Data
-			println("推文作者暱稱:", tweet.Fullname)
+			log.Println("推文作者暱稱:", tweet.Fullname)
 		}
 		var tweetTimes []*html.Node = doc.Find(".main-tweet .timeline-item .tweet-body .tweet-published").Nodes
 		if len(tweetTimes) == 0 {
-			println("解析推文時間失敗")
+			log.Println("解析推文時間失敗")
 		} else {
 			tweet.Time = tweetTimes[0].FirstChild.Data
-			println("推文時間:", tweet.Time)
+			log.Println("推文時間:", tweet.Time)
 		}
 		var tweetStats []*html.Node = doc.Find(".main-tweet .timeline-item .tweet-body .tweet-stats .icon-container").Nodes
 		if len(tweetStats) == 0 {
-			println("解析推文統計失敗")
+			log.Println("解析推文統計失敗")
 		} else {
 			var tweetStatTitle []string = []string{"回覆", "轉推", "引用", "喜歡"}
 			var tweetStatNum []int = []int{0, 0, 0, 0}
@@ -347,7 +348,7 @@ func tweetGET(url string) Tweet {
 					num = 0
 				}
 				tweetStatNum[i] = num
-				println(tweetStatTitle[i], ":", tweetStatNum[i])
+				log.Println(tweetStatTitle[i], ":", tweetStatNum[i])
 				i++
 			}
 			tweet.Comments = tweetStatNum[0]
@@ -357,7 +358,7 @@ func tweetGET(url string) Tweet {
 		}
 		var tweetContents []*html.Node = doc.Find(".main-tweet .timeline-item .tweet-body .tweet-content").Nodes
 		if len(tweetContents) == 0 {
-			println("解析推文內容失敗")
+			log.Println("解析推文內容失敗")
 		} else {
 			var tweetContent *html.Node = tweetContents[0]
 			for c := tweetContent.FirstChild; c != nil; c = c.NextSibling {
@@ -369,32 +370,30 @@ func tweetGET(url string) Tweet {
 					}
 				}
 			}
-			println("推文內容:", tweet.Content)
+			log.Println("推文內容:", tweet.Content)
 		}
 		var images []*html.Node = doc.Find(".main-tweet .timeline-item .tweet-body .attachments .attachment .still-image").Nodes
 		if len(images) > 0 {
-			println("推文附圖:")
 			for _, image := range images {
 				for _, attr := range image.Attr {
 					if attr.Key == "href" {
-						var imageURL string = fmt.Sprintf("https://%s%s\n", config.Nitter, attr.Val)
+						var imageURL string = fmt.Sprintf("https://%s%s\n", config.Nitter[nitterI], attr.Val)
 						tweet.MediaNum++
 						tweet.Images = append(tweet.Images, imageURL)
-						log.Println(imageURL)
+						log.Println("推文附圖:", imageURL)
 					}
 				}
 			}
 		}
 		var videos []*html.Node = doc.Find(".main-tweet .timeline-item .tweet-body .video-container video").Nodes
 		if len(videos) > 0 {
-			println("推文附影片:")
 			for _, video := range videos {
 				for _, attr := range video.Attr {
 					if attr.Key == "data-url" {
-						var videoURL string = fmt.Sprintf("https://%s%s\n", config.Nitter, attr.Val)
+						var videoURL string = fmt.Sprintf("https://%s%s\n", config.Nitter[nitterI], attr.Val)
 						tweet.MediaNum++
 						tweet.Videos = append(tweet.Videos, videoURL)
-						log.Println(videoURL)
+						log.Println("推文附影片: ", videoURL)
 					}
 				}
 			}

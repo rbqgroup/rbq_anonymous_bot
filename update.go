@@ -83,6 +83,9 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 			textUnit = textUnit[1:]
 			text = strings.Join(textUnit, " ")
 			toChannel, toChat = cmdTChat(cmd)
+			if len(toChat) == 0 {
+				continue
+			}
 			toChatID, _ = strconv.ParseInt(toChat, 10, 64)
 			var logt = fmt.Sprintf("已指定收件人: %d", toChatID)
 			if toChannel {
