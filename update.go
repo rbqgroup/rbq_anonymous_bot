@@ -108,7 +108,7 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 				fileID = tgbotapi.FileID(message.Video.FileID)
 				video = tgbotapi.NewInputMediaVideo(fileID)
 				if medias[message.MediaGroupID] == nil {
-					text = config.HeadVideo + text
+					text = config.Head.Video + text
 					video.Caption = text
 				}
 			} else if message.Photo != nil {
@@ -116,7 +116,7 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 				fileID = tgbotapi.FileID(message.Photo[0].FileID)
 				photo = tgbotapi.NewInputMediaPhoto(fileID)
 				if medias[message.MediaGroupID] == nil {
-					text = config.HeadPhoto + text
+					text = config.Head.Photo + text
 					photo.Caption = text
 				}
 			} else if message.Animation != nil {
@@ -124,7 +124,7 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 				fileID = tgbotapi.FileID(message.Animation.FileID)
 				animation = tgbotapi.NewInputMediaAnimation(fileID)
 				if medias[message.MediaGroupID] == nil {
-					text = config.HeadAnimation + text
+					text = config.Head.Animation + text
 					animation.Caption = text
 				}
 			}
@@ -158,7 +158,7 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 			}
 		} else if len(text) > 0 {
 			mode = 1
-			text = config.HeadText + text
+			text = config.Head.Text + text
 			logCache = append(logCache, fmt.Sprintf("收到的資訊型別: %s", modeString[mode]))
 			if update.Message.Chat.ID == update.Message.From.ID && len(config.Nitter) > 0 && tweetGETchk(text) {
 				logCache = append(logCache, "有且僅有一個推特連結，開始解析。")

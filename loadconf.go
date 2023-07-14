@@ -10,22 +10,27 @@ import (
 
 var config ConfigFile
 
+type ConfigHead struct {
+	Video     string `json:"video"`
+	Animation string `json:"animation"`
+	Photo     string `json:"photo"`
+	Document  string `json:"document"`
+	Text      string `json:"text"`
+}
+
 type ConfigFile struct {
-	Ver           int8              `json:"ver"`
-	Debug         int64             `json:"debug"`
-	HealthCheck   string            `json:"healthcheck"`
-	TimeZone      int8              `json:"timezone"`
-	Proxy         string            `json:"proxy"`
-	Apikey        string            `json:"apikey"`
-	Timeout       int               `json:"timeout"`
-	Whitelist     []int64           `json:"whitelist"`
-	To            map[string]string `json:"to"`
-	DefTo         int64             `json:"defto"`
-	Nitter        []string          `json:"nitterHost"`
-	HeadText      string            `json:"headText"`
-	HeadPhoto     string            `json:"headPhoto"`
-	HeadVideo     string            `json:"headVideo"`
-	HeadAnimation string            `json:"headAnimation"`
+	Ver         int8              `json:"ver"`
+	Debug       int64             `json:"debug"`
+	HealthCheck string            `json:"healthcheck"`
+	TimeZone    int8              `json:"timezone"`
+	Proxy       string            `json:"proxy"`
+	Apikey      string            `json:"apikey"`
+	Timeout     int               `json:"timeout"`
+	Whitelist   []int64           `json:"whitelist"`
+	To          map[string]string `json:"to"`
+	DefTo       int64             `json:"defto"`
+	Nitter      []string          `json:"nitterHost"`
+	Head        ConfigHead        `json:"head"`
 }
 
 func cmdTChat(cmd string) (bool, string) {
@@ -63,7 +68,7 @@ func loadConfig() bool {
 			}
 		}
 	}
-	if config.Ver != 1 {
+	if config.Ver != 2 {
 		log.Println("配置檔案版本不符: ", config.Ver)
 		return false
 	}
