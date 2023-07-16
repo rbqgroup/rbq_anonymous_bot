@@ -10,7 +10,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-var modeString []string = []string{"0空白", "1文字", "2圖片", "3影片", "4動畫", "5多圖組"}
+var modeString []string = []string{"0空白", "1文字", "2圖片", "3影片", "4動畫", "5多圖組", "6文件"}
 
 func getUpdates(bot *tgbotapi.BotAPI) {
 	var u tgbotapi.UpdateConfig = tgbotapi.NewUpdate(0)
@@ -99,10 +99,11 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 		}
 		text = filterTwitterURL(text)
 		var fileID tgbotapi.FileID
-		if message.Photo != nil || message.Video != nil || message.Animation != nil {
+		if message.Photo != nil || message.Video != nil || message.Animation != nil || message.Document != nil {
 			var photo tgbotapi.InputMediaPhoto
 			var video tgbotapi.InputMediaVideo
 			var animation tgbotapi.InputMediaAnimation
+			var file tgbotapi.InputMediaDocument
 			if message.Video != nil {
 				mode = 3
 				fileID = tgbotapi.FileID(message.Video.FileID)
@@ -126,6 +127,14 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 				if medias[message.MediaGroupID] == nil {
 					text = config.Head.Animation + text
 					animation.Caption = text
+				}
+			} else if message.Document != nil {
+				mode = 6
+				fileID = tgbotapi.FileID(message.Document.FileID)
+				file = tgbotapi.NewInputMediaDocument(fileID)
+				if medias[message.MediaGroupID] == nil {
+					text = config.Head.Document + text
+					file.Caption = text
 				}
 			}
 			logCache = append(logCache, fmt.Sprintf("收到的資訊型別: %s", modeString[mode]))
@@ -151,6 +160,12 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 						nMedia = append(medias[message.MediaGroupID], animation)
 					} else {
 						nMedia = append(nMedia, animation)
+					}
+				} else if mode == 6 {
+					if medias[message.MediaGroupID] != nil {
+						nMedia = append(medias[message.MediaGroupID], file)
+					} else {
+						nMedia = append(nMedia, file)
 					}
 				}
 				medias[update.Message.MediaGroupID] = nMedia
@@ -209,6 +224,10 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 				var animationMsg tgbotapi.AnimationConfig = tgbotapi.NewAnimation(toChatID, fileID)
 				animationMsg.Caption = text
 				msg = animationMsg
+			case 6:
+				var fileMsg tgbotapi.DocumentConfig = tgbotapi.NewDocument(toChatID, fileID)
+				fileMsg.Caption = text
+				msg = fileMsg
 			default:
 				return
 			}
@@ -228,7 +247,7 @@ func getUpdates(bot *tgbotapi.BotAPI) {
 				tousrs[MediaGroupID] = toChatID
 			}
 			if timers[MediaGroupID] == nil {
-				newTicker := time.NewTicker(3 * time.Second)
+				newTicker := time.NewTicker(5 * time.Second)
 				timers[MediaGroupID] = newTicker
 				go func() {
 					<-newTicker.C
