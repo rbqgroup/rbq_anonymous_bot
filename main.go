@@ -21,7 +21,7 @@ type ChatObj struct {
 	Title string
 }
 
-const botvar string = "v1.2.2"
+const botvar string = "v1.3.0"
 
 var bot *tgbotapi.BotAPI
 

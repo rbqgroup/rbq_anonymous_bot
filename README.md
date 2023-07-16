@@ -1,6 +1,6 @@
 ![icon](macOS/rbqanonymousbot/Assets.xcassets/AppIcon.appiconset/rbq%205.png)
 
-# [RBQ Anonymous Bot v1.2.2](https://github.com/rbqgroup/rbq_anonymous_bot)
+# [RBQ Anonymous Bot v1.3.0](https://github.com/rbqgroup/rbq_anonymous_bot)
 
 频道小编工具：向绒频道和群组匿名发表内容。
 
@@ -53,7 +53,7 @@
 
 ## 编译
 
-开发时所用 golang 版本: `1.19.5`
+开发时所用 golang 版本: `1.20.4`
 
 ```sh
 go get

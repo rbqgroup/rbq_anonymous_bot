@@ -1,5 +1,5 @@
 SET NAME=rbq_anonymous_bot
-SET NAMEV=%NAME%_v1.2.2_
+SET NAMEV=%NAME%_v1.3.0_
 MD bin
 DEL /Q bin\*
 COPY README.md bin\
